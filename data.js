@@ -499,7 +499,7 @@ async function generateQuestionsAI(params) {
   return (data.questions || []).map((x, i) => ({
     id: "qai_" + Date.now() + "_" + i,
     text: x.q,
-    type: "multiple",
+    type: params.type || "multiple",
     correctAnswer: x.correct,
     wrongAnswers: Array.isArray(x.wrongs) ? x.wrongs : [],
     difficulty: diff,

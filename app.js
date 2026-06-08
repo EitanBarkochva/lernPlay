@@ -144,15 +144,15 @@ async function generateAIQuestions() {
     .replace("כיתה", "").trim();
   const subject = document.getElementById("subject").selectedOptions[0]?.text || "";
   const topic = document.getElementById("topic").selectedOptions[0]?.text || "";
-  const diffMap = { easy: "קל", medium: "בינוני", hard: "קשה" };
-  const difficulty = diffMap[document.getElementById("qDifficulty").value] || "קל";
+  const difficulty = document.getElementById("aiDifficulty").value || "קל";
+  const type = document.getElementById("aiType").value || "multiple";
 
   status.className = "ai-status";
   status.textContent = "🤖 יוצר " + count + " שאלות... זה עשוי לקחת מספר שניות";
   btn.disabled = true;
 
   try {
-    const qs = await generateQuestionsAI({ subject, grade: gradeText, topic, count, difficulty });
+    const qs = await generateQuestionsAI({ subject, grade: gradeText, topic, count, difficulty, type });
     if (!qs.length) { status.textContent = "לא התקבלו שאלות. נסה שוב."; return; }
     draftGame.questions.push(...qs);
     renderQuestionsList();

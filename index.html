@@ -116,10 +116,24 @@
         <label>כמה שאלות?</label>
         <input type="number" id="aiCount" value="10" min="1" max="30">
       </div>
-      <div style="display:flex; align-items:flex-end;">
-        <button id="aiBtn" class="btn purple" onclick="generateAIQuestions()">✨ צור שאלות ב-AI</button>
+      <div>
+        <label>רמת קושי</label>
+        <select id="aiDifficulty">
+          <option value="קל">קל</option>
+          <option value="בינוני">בינוני</option>
+          <option value="קשה">קשה</option>
+        </select>
+      </div>
+      <div>
+        <label>סוג שאלה</label>
+        <select id="aiType">
+          <option value="multiple">בחירה מרובה</option>
+          <option value="truefalse">נכון / לא נכון</option>
+          <option value="open">תשובה פתוחה</option>
+        </select>
       </div>
     </div>
+    <button id="aiBtn" class="btn purple big" onclick="generateAIQuestions()">✨ צור שאלות ב-AI</button>
     <p id="aiStatus" class="ai-status"></p>
   </div>
 
