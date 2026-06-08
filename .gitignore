@@ -1,0 +1,15 @@
+# הגדרות מקומיות של הסביבה
+.claude/
+
+# קבצי מערכת
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# עורכים
+.vscode/
+.idea/
+*.swp
+
+# לוגים
+*.log

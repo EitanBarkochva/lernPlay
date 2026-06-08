@@ -1,0 +1,199 @@
+/* ============================================================
+   style.css  —  עיצוב צבעוני, RTL, ידידותי לילדי כיתה א
+   רספונסיבי לטלפון ולמחשב.
+   ============================================================ */
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  direction: rtl;
+  font-family: "Arial", "Heebo", sans-serif;
+  background: linear-gradient(160deg, #fdf6e3 0%, #cdeffd 100%);
+  color: #333;
+  min-height: 100vh;
+  font-size: 18px;
+  padding: 16px;
+}
+
+/* ----- ניהול מסכים ----- */
+.screen { display: none; max-width: 960px; margin: 0 auto; animation: fade .25s ease; }
+.screen.active { display: block; }
+@keyframes fade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; } }
+
+h1 { font-size: 2rem; }
+h2 { font-size: 1.6rem; margin-bottom: 16px; color: #2c3e50; }
+h3 { margin: 12px 0; color: #2c3e50; }
+
+/* ----- דף בית ----- */
+.hero { text-align: center; padding: 20px 10px; }
+.hero h1 { color: #e74c3c; text-shadow: 2px 2px 0 #fff; }
+.subtitle { font-size: 1.2rem; color: #555; margin-top: 8px; }
+
+.home-buttons {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin: 24px 0;
+}
+.big-btn {
+  border: none; border-radius: 18px; padding: 26px 14px;
+  font-size: 1.3rem; font-weight: bold; color: #fff;
+  cursor: pointer; box-shadow: 0 6px 0 rgba(0,0,0,.18);
+  transition: transform .1s, box-shadow .1s;
+}
+.big-btn small { font-size: .85rem; font-weight: normal; opacity: .9; }
+.big-btn:active { transform: translateY(4px); box-shadow: 0 2px 0 rgba(0,0,0,.18); }
+.big-btn.green  { background: #27ae60; }
+.big-btn.blue   { background: #2980b9; }
+.big-btn.purple { background: #8e44ad; }
+.big-btn.orange { background: #e67e22; }
+.big-btn.pink   { background: #e84393; }
+.big-btn.teal   { background: #16a085; }
+
+.demo-hint { text-align: center; background: #fff3cd; padding: 12px; border-radius: 12px; }
+
+/* ----- כפתורים כלליים ----- */
+.btn {
+  border: none; border-radius: 12px; padding: 14px 24px;
+  font-size: 1.1rem; font-weight: bold; color: #fff;
+  background: #2980b9; cursor: pointer; margin-top: 12px;
+  box-shadow: 0 4px 0 rgba(0,0,0,.15); transition: transform .1s;
+}
+.btn:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0,0,0,.15); }
+.btn.green { background: #27ae60; }
+.btn.blue  { background: #2980b9; }
+.btn.big   { width: 100%; padding: 18px; font-size: 1.25rem; margin-top: 18px; }
+
+.btn-small { padding: 6px 12px; font-size: .9rem; border: none; border-radius: 8px; color: #fff; cursor: pointer; background: #7f8c8d; }
+.btn-danger { background: #e74c3c; }
+
+.back-btn {
+  background: #fff; border: 2px solid #bbb; border-radius: 10px;
+  padding: 8px 16px; font-size: 1rem; cursor: pointer; margin-bottom: 12px;
+}
+
+/* ----- טפסים ----- */
+.form-card {
+  background: #fff; border-radius: 18px; padding: 22px;
+  box-shadow: 0 4px 16px rgba(0,0,0,.08); margin-bottom: 16px;
+}
+.form-card label { display: block; margin: 14px 0 6px; font-weight: bold; color: #444; }
+.form-card input, .form-card select {
+  width: 100%; padding: 12px; font-size: 1.05rem;
+  border: 2px solid #cbd5e0; border-radius: 10px; background: #fbfdff;
+}
+.form-card input:focus, .form-card select:focus { outline: none; border-color: #2980b9; }
+.row { display: flex; gap: 12px; flex-wrap: wrap; }
+.row > div { flex: 1; min-width: 120px; }
+
+/* ----- רשימת שאלות ----- */
+.questions-list { margin: 12px 0; }
+.q-item {
+  background: #fff; border-radius: 10px; padding: 12px 14px; margin-bottom: 8px;
+  display: flex; justify-content: space-between; align-items: center; gap: 10px;
+  box-shadow: 0 2px 6px rgba(0,0,0,.06);
+}
+.q-item small { color: #777; }
+.muted { color: #888; }
+
+/* ----- קוד משחק ----- */
+.code-box { background: #fff; border-radius: 18px; padding: 30px; text-align: center; box-shadow: 0 4px 16px rgba(0,0,0,.1); margin-bottom: 16px; }
+.code-display {
+  font-size: 2.8rem; font-weight: bold; letter-spacing: 4px; color: #e74c3c;
+  background: #fff3cd; border: 3px dashed #f39c12; border-radius: 14px;
+  padding: 18px; margin: 16px 0; direction: ltr;
+}
+
+/* ----- מסך המשחק ----- */
+.game-screen { max-width: 940px; }
+.game-topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-weight: bold; }
+#gameCanvas {
+  display: block; width: 100%; max-width: 900px; margin: 0 auto;
+  border: 4px solid #2c3e50; border-radius: 12px; background: #87CEEB;
+  touch-action: none;
+}
+.controls-hint { text-align: center; color: #555; margin-top: 10px; font-size: .95rem; }
+
+.touch-controls { display: flex; justify-content: center; gap: 14px; margin-top: 14px; }
+.touch-btn {
+  width: 80px; height: 64px; font-size: 1.5rem; border: none; border-radius: 14px;
+  background: #34495e; color: #fff; cursor: pointer; user-select: none;
+  box-shadow: 0 4px 0 rgba(0,0,0,.25);
+}
+.touch-btn.jump { background: #27ae60; width: 130px; font-size: 1.1rem; }
+.touch-btn:active { transform: translateY(3px); }
+
+/* ----- חלון שאלה (מודאל) ----- */
+.modal {
+  display: none; position: fixed; inset: 0; background: rgba(0,0,0,.6);
+  z-index: 100; align-items: center; justify-content: center; padding: 16px;
+}
+.modal.show { display: flex; }
+.modal-content {
+  background: #fff; border-radius: 20px; padding: 30px; max-width: 520px; width: 100%;
+  text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,.3); animation: pop .25s ease;
+}
+@keyframes pop { from { transform: scale(.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.question-text { font-size: 1.6rem; margin-bottom: 20px; color: #2c3e50; }
+.answer-area { display: flex; flex-direction: column; gap: 10px; align-items: stretch; }
+.answer-input { padding: 14px; font-size: 1.3rem; text-align: center; border: 2px solid #cbd5e0; border-radius: 10px; }
+.answer-option { background: #3498db; }
+.answer-option:hover { background: #2980b9; }
+
+.feedback { margin-top: 16px; font-size: 1.2rem; font-weight: bold; min-height: 28px; }
+.feedback.correct { color: #27ae60; }
+.feedback.wrong { color: #e74c3c; }
+
+/* ----- quiz ----- */
+.quiz-progress { text-align: center; font-weight: bold; color: #8e44ad; margin-bottom: 10px; }
+
+/* ----- דוחות ----- */
+.report-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 18px; }
+.report-card { background: #fff; border-radius: 12px; padding: 14px; text-align: center; font-weight: bold; box-shadow: 0 2px 8px rgba(0,0,0,.07); }
+.report-card.good { background: #d4edda; }
+.report-card.bad { background: #f8d7da; }
+.report-card.gold { background: #fff3cd; }
+.report-card.total { background: #d1ecf1; }
+
+.table-wrap { overflow-x: auto; }
+.report-table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,.07); margin-top: 8px; }
+.report-table th, .report-table td { padding: 10px 8px; text-align: center; border-bottom: 1px solid #eee; font-size: .95rem; }
+.report-table th { background: #2c3e50; color: #fff; }
+.report-table .row-ok { background: #f0fff4; }
+.report-table .row-bad { background: #fff5f5; }
+.report-table .clickable { cursor: pointer; }
+.report-table .clickable:hover { background: #eef6ff; }
+.report-table.inner th { background: #7f8c8d; }
+.detail-row td { background: #fafafa; }
+
+.report-actions { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; margin-top: 18px; }
+
+/* ----- צפייה בשאלות ----- */
+.q-view { background: #fff; border-radius: 12px; padding: 14px; margin-bottom: 10px; box-shadow: 0 2px 6px rgba(0,0,0,.06); }
+.q-view .answer-line { color: #27ae60; margin-top: 6px; }
+
+/* ----- מסך בחירת משחק ----- */
+.browse-grade {
+  margin: 18px 0 8px; color: #16a085; border-bottom: 2px solid #d0f0e8; padding-bottom: 4px;
+}
+.browse-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px;
+}
+.game-card {
+  display: flex; flex-direction: column; gap: 4px; text-align: right;
+  background: #fff; border: 2px solid #e0e0e0; border-radius: 14px; padding: 14px;
+  cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,.06); transition: transform .1s, border-color .1s;
+}
+.game-card:hover { border-color: #16a085; transform: translateY(-2px); }
+.game-card:active { transform: translateY(1px); }
+.game-card-topic { font-size: 1.15rem; font-weight: bold; color: #2c3e50; }
+.game-card-sub { font-size: .85rem; color: #888; direction: ltr; text-align: right; }
+.game-card-play { color: #16a085; font-weight: bold; margin-top: 4px; }
+
+/* ----- רספונסיבי ----- */
+@media (max-width: 600px) {
+  body { font-size: 16px; padding: 10px; }
+  .hero h1 { font-size: 1.5rem; }
+  .question-text { font-size: 1.3rem; }
+  .code-display { font-size: 2rem; }
+}

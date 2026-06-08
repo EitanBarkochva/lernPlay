@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>משחק לימודי — חופש גדול</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ============ 1. דף בית ============ -->
+<div id="homeScreen" class="screen active">
+  <div class="hero">
+    <h1>🎮 משחק לימודי לחופש הגדול 🌞</h1>
+    <p class="subtitle">לומדים, משחקים ואוספים מטבעות זהב!</p>
+  </div>
+  <div class="home-buttons">
+    <button class="big-btn green"  onclick="showScreen('createGameScreen')">➕ יצירת משחק חדש<br><small>למורה / הורה</small></button>
+    <button class="big-btn teal"   onclick="showBrowse()">📚 בחר משחק מוכן<br><small>לפי כיתה ונושא</small></button>
+    <button class="big-btn blue"   onclick="showScreen('studentLoginScreen')">🕹️ כניסה עם קוד<br><small>לתלמיד</small></button>
+    <button class="big-btn purple" onclick="showScreen('quizOnlyScreen')">📝 שאלות בלי משחק</button>
+    <button class="big-btn orange" onclick="showScreen('teacherReportsScreen')">📊 צפייה בדוחות</button>
+    <button class="big-btn pink"   onclick="showScreen('viewQuestionsScreen')">👀 צפייה בשאלות</button>
+  </div>
+  <p class="demo-hint">💡 טיפ: יש משחק דוגמה מוכן! קוד המשחק: <b>DEMO-A1</b></p>
+</div>
+
+<!-- ============ 2. יצירת משחק ============ -->
+<div id="createGameScreen" class="screen">
+  <button class="back-btn" onclick="showScreen('homeScreen')">⬅ חזרה</button>
+  <h2>➕ יצירת משחק חדש</h2>
+  <div class="form-card">
+    <label>שם היוצר</label>
+    <input type="text" id="creatorName" placeholder="לדוגמה: המורה דנה">
+
+    <label>סוג יוצר</label>
+    <select id="creatorType">
+      <option value="teacher">מורה</option>
+      <option value="parent">הורה</option>
+    </select>
+
+    <label>כיתה</label>
+    <select id="grade"></select>
+
+    <label>מקצוע</label>
+    <select id="subject"></select>
+
+    <label>נושא</label>
+    <select id="topic"></select>
+
+    <label>סוג משחק</label>
+    <select id="gameType"></select>
+
+    <label>שם המשחק / כותרת</label>
+    <input type="text" id="gameTitle" placeholder="לדוגמה: תרגול חיבור לכיתה א">
+
+    <label>מספר שלבים במשחק</label>
+    <input type="number" id="levels" value="5" min="1" max="20">
+
+    <label>כתובת מייל (לדוח / מייל למורה)</label>
+    <input type="email" id="creatorEmail" placeholder="teacher@example.com">
+
+    <button class="btn green" onclick="createGame()">המשך להוספת שאלות ➡</button>
+  </div>
+</div>
+
+<!-- ============ 3. הוספת שאלות ============ -->
+<div id="addQuestionsScreen" class="screen">
+  <button class="back-btn" onclick="showScreen('createGameScreen')">⬅ חזרה</button>
+  <h2>📝 הוספת שאלות</h2>
+  <div class="form-card">
+    <label>טקסט השאלה</label>
+    <input type="text" id="qText" placeholder="כמה זה 4 + 3?">
+
+    <label>תשובה נכונה</label>
+    <input type="text" id="qCorrect" placeholder="7">
+
+    <label>תשובות שגויות (מופרדות בפסיק, לא חובה)</label>
+    <input type="text" id="qWrong" placeholder="5, 6, 8">
+
+    <div class="row">
+      <div>
+        <label>סוג שאלה</label>
+        <select id="qType">
+          <option value="multiple">בחירה מרובה</option>
+          <option value="open">תשובה פתוחה</option>
+          <option value="truefalse">נכון / לא נכון</option>
+        </select>
+      </div>
+      <div>
+        <label>רמת קושי</label>
+        <select id="qDifficulty">
+          <option value="easy">קל</option>
+          <option value="medium">בינוני</option>
+          <option value="hard">קשה</option>
+        </select>
+      </div>
+      <div>
+        <label>מטבעות</label>
+        <input type="number" id="qCoins" value="10" min="1">
+      </div>
+    </div>
+
+    <label>הסבר (יוצג אם התלמיד טעה)</label>
+    <input type="text" id="qExplanation" placeholder="4 ועוד 3 הם 7">
+
+    <button class="btn blue" onclick="addQuestion()">➕ הוסף שאלה</button>
+  </div>
+
+  <div id="questionsList" class="questions-list"></div>
+
+  <button class="btn green big" onclick="finishGameCreation()">✅ סיום ויצירת קוד משחק</button>
+</div>
+
+<!-- ============ 4. קוד משחק ============ -->
+<div id="gameCodeScreen" class="screen">
+  <h2>🎉 המשחק נוצר בהצלחה!</h2>
+  <div class="code-box">
+    <p>הקוד לתלמידים:</p>
+    <div class="code-display" id="generatedCode">A1-0000</div>
+    <button class="btn blue" onclick="copyCode()">📋 העתק קוד</button>
+  </div>
+  <button class="btn green" onclick="showScreen('homeScreen')">🏠 חזרה לדף הבית</button>
+</div>
+
+<!-- ============ בחירת משחק מוכן ============ -->
+<div id="browseScreen" class="screen">
+  <button class="back-btn" onclick="showScreen('homeScreen')">⬅ חזרה</button>
+  <h2>📚 בחירת משחק</h2>
+  <div class="form-card">
+    <div class="row">
+      <div>
+        <label>חיפוש נושא</label>
+        <input type="text" id="browseSearch" placeholder="לדוגמה: כפל, חיבור, חילוק..." oninput="renderBrowse()" autocomplete="off">
+      </div>
+      <div>
+        <label>סינון לפי כיתה</label>
+        <select id="browseGrade" onchange="renderBrowse()"></select>
+      </div>
+    </div>
+  </div>
+  <div id="browseList"></div>
+</div>
+
+<!-- ============ 5. כניסת תלמיד ============ -->
+<div id="studentLoginScreen" class="screen">
+  <button class="back-btn" onclick="showScreen('homeScreen')">⬅ חזרה</button>
+  <h2>🕹️ כניסה למשחק</h2>
+  <div class="form-card">
+    <label>שם פרטי</label>
+    <input type="text" id="studentName" placeholder="השם שלך">
+    <label>כיתה</label>
+    <input type="text" id="studentGrade" placeholder="א">
+    <label>קוד משחק</label>
+    <input type="text" id="gameCode" placeholder="DEMO-A1">
+    <button class="btn green big" onclick="startGame()">🚀 התחל משחק</button>
+  </div>
+</div>
+
+<!-- ============ 6. מסך המשחק ============ -->
+<div id="marioGameScreen" class="screen game-screen">
+  <div class="game-topbar">
+    <span id="gameTitleLabel">משחק</span>
+    <button class="btn-small btn-danger" onclick="quitGame()">יציאה</button>
+  </div>
+  <canvas id="gameCanvas" width="900" height="420"></canvas>
+
+  <!-- כפתורי מגע לטלפון -->
+  <div class="touch-controls">
+    <button class="touch-btn" onpointerdown="touchPress('ArrowRight')" onpointerup="touchRelease('ArrowRight')" onpointerleave="touchRelease('ArrowRight')">▶</button>
+    <button class="touch-btn jump" onpointerdown="touchPress(' ')" onpointerup="touchRelease(' ')" onpointerleave="touchRelease(' ')">⬆ קפיצה</button>
+    <button class="touch-btn" onpointerdown="touchPress('ArrowLeft')" onpointerup="touchRelease('ArrowLeft')" onpointerleave="touchRelease('ArrowLeft')">◀</button>
+  </div>
+  <p class="controls-hint">מקלדת: חיצים ימינה/שמאלה לתנועה, רווח לקפיצה. הגע לתיבת ה-❓ כדי לענות על שאלה!</p>
+</div>
+
+<!-- ============ חלון שאלה (מודאל) ============ -->
+<div id="questionModal" class="modal">
+  <div class="modal-content">
+    <h2 class="question-text" id="questionText"></h2>
+    <div class="answer-area" id="answerArea"></div>
+    <div class="feedback" id="questionFeedback"></div>
+  </div>
+</div>
+
+<!-- ============ 7. שאלות בלי משחק (כניסה) ============ -->
+<div id="quizOnlyScreen" class="screen">
+  <button class="back-btn" onclick="showScreen('homeScreen')">⬅ חזרה</button>
+  <h2>📝 פתרון שאלות ללא משחק</h2>
+  <div class="form-card">
+    <label>שם</label>
+    <input type="text" id="quizStudentName" placeholder="השם שלך">
+    <label>קוד משחק</label>
+    <input type="text" id="quizGameCode" placeholder="DEMO-A1">
+    <button class="btn green big" onclick="startQuiz()">התחל לפתור</button>
+  </div>
+</div>
+
+<!-- ============ מסך הרצת ה-quiz ============ -->
+<div id="quizRunScreen" class="screen">
+  <button class="back-btn" onclick="showScreen('homeScreen')">⬅ יציאה</button>
+  <p id="quizProgress" class="quiz-progress"></p>
+  <div id="quizQuestionBox" class="form-card"></div>
+</div>
+
+<!-- ============ 8. דוח תלמיד ============ -->
+<div id="studentReportScreen" class="screen">
+  <h2>🏆 הדוח שלך!</h2>
+  <div id="studentReportSummary"></div>
+  <div id="studentReportTable" class="table-wrap"></div>
+  <div class="report-actions">
+    <button id="mailTeacherBtn" class="btn blue">📧 פתיחת מייל למורה</button>
+    <button class="btn green" onclick="showScreen('homeScreen')">🏠 לדף הבית</button>
+  </div>
+</div>
+
+<!-- ============ 9. דוחות מורה ============ -->
+<div id="teacherReportsScreen" class="screen">
+  <button class="back-btn" onclick="showScreen('homeScreen')">⬅ חזרה</button>
+  <h2>📊 צפייה בדוחות</h2>
+  <div class="form-card">
+    <label>קוד משחק</label>
+    <input type="text" id="teacherCode" placeholder="DEMO-A1">
+    <button class="btn blue" onclick="showTeacherReports()">הצג דוחות</button>
+  </div>
+  <div id="teacherReportsResult" class="table-wrap"></div>
+</div>
+
+<!-- ============ צפייה בשאלות ============ -->
+<div id="viewQuestionsScreen" class="screen">
+  <button class="back-btn" onclick="showScreen('homeScreen')">⬅ חזרה</button>
+  <h2>👀 צפייה בשאלות</h2>
+  <div class="form-card">
+    <label>קוד משחק</label>
+    <input type="text" id="viewCode" placeholder="DEMO-A1">
+    <button class="btn blue" onclick="viewQuestions()">הצג שאלות</button>
+  </div>
+  <div id="viewQuestionsResult"></div>
+</div>
+
+<!-- סדר הטעינה חשוב: קודם הנתונים, אחר כך המשחק, ולבסוף הלוגיקה -->
+<script src="data.js"></script>
+<script src="game.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
