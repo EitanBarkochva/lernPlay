@@ -28,6 +28,8 @@ const MarioGame = (function () {
   let perLevel = 5;              // כמה שאלות בכל שלב
   let activeBox = null;          // התיבה שנגעו בה כרגע (לסימון אחרי תשובה)
   let answeredBoxes = 0;         // כמה תיבות שאלה כבר נענו
+  let frame = 0;                 // מונה פריימים לאנימציות
+  let particles = [];            // חלקיקי נצנוץ (איסוף מטבע)
 
   // צלילים פשוטים נוצרים ב-Web Audio (בלי קבצים חיצוניים)
   let audioCtx = null;
@@ -192,6 +194,7 @@ const MarioGame = (function () {
         c.taken = true;
         silverCoins++;
         sounds.coin();
+        spawnSparkles(c.x, c.y);     // אפקט נצנוץ באיסוף מטבע
       }
     }
 
@@ -253,118 +256,307 @@ const MarioGame = (function () {
   }
 
   /* ------------------------------------------------------------
+     spawnSparkles(x, y) - יצירת חלקיקי נצנוץ במיקום נתון.
+     ------------------------------------------------------------ */
+  function spawnSparkles(x, y) {
+    for (let i = 0; i < 8; i++) {
+      particles.push({
+        x: x, y: y,
+        vx: (Math.random() - 0.5) * 4,
+        vy: -Math.random() * 4 - 1,
+        life: 30,
+        color: Math.random() > 0.5 ? "#FFD700" : "#FFF6A0"
+      });
+    }
+  }
+
+  /* ----- עדכון וציור חלקיקים ----- */
+  function updateParticles() {
+    for (const p of particles) {
+      p.x += p.vx; p.y += p.vy; p.vy += 0.2; p.life--;
+    }
+    particles = particles.filter(p => p.life > 0);
+  }
+  function drawParticles() {
+    for (const p of particles) {
+      ctx.globalAlpha = Math.max(0, p.life / 30);
+      ctx.fillStyle = p.color;
+      ctx.fillRect(p.x - 2, p.y - 2, 4, 4);
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  /* ------------------------------------------------------------
      draw() - ציור כל אלמנטי המשחק.
      ------------------------------------------------------------ */
   function draw() {
-    // רקע שמיים
+    const groundY = canvas.height - 50;
+
+    // ----- רקע שמיים מדורג -----
     const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
-    grad.addColorStop(0, "#87CEEB");
-    grad.addColorStop(1, "#C9F0FF");
+    grad.addColorStop(0, "#4FA8E0");
+    grad.addColorStop(0.6, "#9BD6F4");
+    grad.addColorStop(1, "#DFF6FF");
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // עננים פשוטים
-    drawCloud(150 - cameraX * 0.3, 60);
-    drawCloud(500 - cameraX * 0.3, 100);
-    drawCloud(900 - cameraX * 0.3, 50);
+    // ----- שמש עם זוהר -----
+    drawSun(canvas.width - 70, 70);
+
+    // ----- גבעות רקע (פרלקס איטי) -----
+    drawHills(groundY);
+
+    // ----- עננים (פרלקס) -----
+    drawCloud(150 - cameraX * 0.25, 70);
+    drawCloud(520 - cameraX * 0.25, 110);
+    drawCloud(880 - cameraX * 0.25, 55);
+    drawCloud(1200 - cameraX * 0.25, 95);
 
     ctx.save();
     ctx.translate(-cameraX, 0);
 
-    // פלטפורמות
+    // ----- פלטפורמות -----
     for (const p of platforms) {
-      ctx.fillStyle = (p.h > 30) ? "#6B8E23" : "#8B5A2B"; // קרקע ירוקה / לבנים חומות
-      ctx.fillRect(p.x, p.y, p.w, p.h);
-      if (p.h > 30) {
-        ctx.fillStyle = "#7CFC00"; // דשא עליון
-        ctx.fillRect(p.x, p.y, p.w, 8);
-      }
+      if (p.h > 30) drawGround(p); else drawBrick(p);
     }
 
-    // מטבעות כסף
+    // ----- מטבעות זהב מסתובבים -----
     for (const c of coins) {
       if (c.taken) continue;
-      ctx.beginPath();
-      ctx.arc(c.x, c.y, c.r, 0, Math.PI * 2);
-      ctx.fillStyle = "#C0C0C0";
-      ctx.fill();
-      ctx.strokeStyle = "#808080";
-      ctx.lineWidth = 2;
-      ctx.stroke();
+      drawCoin(c);
     }
 
-    // תיבות שאלה
+    // ----- תיבות שאלה (מרחפות וזוהרות) -----
     for (const box of questionBoxes) {
-      ctx.fillStyle = box.answered ? "#9E9E9E" : "#FFB300";
-      ctx.fillRect(box.x, box.y, box.w, box.h);
-      ctx.strokeStyle = "#8B6508";
-      ctx.lineWidth = 3;
-      ctx.strokeRect(box.x, box.y, box.w, box.h);
-      ctx.fillStyle = "#fff";
-      ctx.font = "bold 26px Arial";
-      ctx.textAlign = "center";
-      ctx.fillText(box.answered ? "✓" : "?", box.x + box.w / 2, box.y + box.h - 8);
+      drawQuestionBox(box);
     }
 
-    // דגל סיום
-    ctx.fillStyle = "#444";
-    ctx.fillRect(flag.x, flag.y, 4, flag.h);
-    ctx.fillStyle = "#E53935";
-    ctx.beginPath();
-    ctx.moveTo(flag.x + 4, flag.y);
-    ctx.lineTo(flag.x + 40, flag.y + 15);
-    ctx.lineTo(flag.x + 4, flag.y + 30);
-    ctx.fill();
+    // ----- דגל סיום מתנופף -----
+    drawFlag();
 
-    // הדמות (מצוירת בלבנים פשוטות)
+    // ----- חלקיקים -----
+    drawParticles();
+
+    // ----- הדמות -----
     drawPlayer();
 
     ctx.restore();
   }
 
-  /* ----- ציור הדמות ----- */
+  /* ----- שמש ----- */
+  function drawSun(x, y) {
+    const g = ctx.createRadialGradient(x, y, 8, x, y, 60);
+    g.addColorStop(0, "rgba(255,241,150,0.95)");
+    g.addColorStop(1, "rgba(255,241,150,0)");
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(x, y, 60, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#FFE45C";
+    ctx.beginPath(); ctx.arc(x, y, 26, 0, Math.PI * 2); ctx.fill();
+  }
+
+  /* ----- גבעות רקע ----- */
+  function drawHills(groundY) {
+    ctx.fillStyle = "#8FD06A";
+    const off = -(cameraX * 0.4) % 600;
+    for (let bx = off - 600; bx < canvas.width + 600; bx += 600) {
+      ctx.beginPath();
+      ctx.arc(bx + 150, groundY, 130, Math.PI, 0);
+      ctx.arc(bx + 420, groundY, 90, Math.PI, 0);
+      ctx.fill();
+    }
+  }
+
+  /* ----- קרקע עם דשא -----*/
+  function drawGround(p) {
+    ctx.fillStyle = "#8B5A2B";                 // אדמה
+    ctx.fillRect(p.x, p.y, p.w, p.h);
+    ctx.fillStyle = "#6B3F1D";                 // נקודות אדמה
+    for (let i = 0; i < p.w; i += 40) {
+      ctx.fillRect(p.x + i + 10, p.y + 20, 6, 6);
+      ctx.fillRect(p.x + i + 28, p.y + 34, 5, 5);
+    }
+    ctx.fillStyle = "#5BB347";                 // דשא
+    ctx.fillRect(p.x, p.y, p.w, 12);
+    ctx.fillStyle = "#74D45C";                 // הדגשת דשא
+    ctx.fillRect(p.x, p.y, p.w, 4);
+  }
+
+  /* ----- פלטפורמת לבנים ----- */
+  function drawBrick(p) {
+    ctx.fillStyle = "#C8763C";
+    ctx.fillRect(p.x, p.y, p.w, p.h);
+    ctx.strokeStyle = "rgba(90,45,15,0.5)";
+    ctx.lineWidth = 2;
+    for (let i = 0; i < p.w; i += 24) ctx.strokeRect(p.x + i, p.y, 24, p.h);
+    ctx.fillStyle = "rgba(255,255,255,0.25)";  // הדגשה עליונה
+    ctx.fillRect(p.x, p.y, p.w, 3);
+  }
+
+  /* ----- מטבע זהב מסתובב + ברק ----- */
+  function drawCoin(c) {
+    const bob = Math.sin((frame + c.x) * 0.08) * 3;       // ריחוף
+    const sx = Math.abs(Math.cos((frame + c.x) * 0.1));    // סיבוב (רוחב)
+    const cy = c.y + bob;
+    ctx.save();
+    ctx.translate(c.x, cy);
+    ctx.scale(sx * 0.9 + 0.1, 1);
+    ctx.beginPath(); ctx.arc(0, 0, c.r, 0, Math.PI * 2);
+    ctx.fillStyle = "#FFD11A"; ctx.fill();
+    ctx.lineWidth = 2; ctx.strokeStyle = "#E0A500"; ctx.stroke();
+    ctx.fillStyle = "#FFE680";
+    ctx.beginPath(); ctx.arc(-c.r * 0.25, -c.r * 0.25, c.r * 0.35, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  }
+
+  /* ----- תיבת שאלה ----- */
+  function drawQuestionBox(box) {
+    const bob = box.answered ? 0 : Math.sin(frame * 0.1) * 4;
+    const y = box.y + bob;
+    if (!box.answered) {                       // זוהר
+      ctx.save();
+      ctx.shadowColor = "#FFD54F"; ctx.shadowBlur = 18;
+    }
+    // גוף
+    const g = ctx.createLinearGradient(box.x, y, box.x, y + box.h);
+    if (box.answered) { g.addColorStop(0, "#B0B0B0"); g.addColorStop(1, "#8A8A8A"); }
+    else { g.addColorStop(0, "#FFC93C"); g.addColorStop(1, "#F5A623"); }
+    ctx.fillStyle = g;
+    roundRect(box.x, y, box.w, box.h, 6); ctx.fill();
+    ctx.strokeStyle = "#8B6508"; ctx.lineWidth = 3;
+    roundRect(box.x, y, box.w, box.h, 6); ctx.stroke();
+    if (!box.answered) ctx.restore();
+    // ברגים בפינות
+    ctx.fillStyle = "#8B6508";
+    [[6,6],[box.w-6,6],[6,box.h-6],[box.w-6,box.h-6]].forEach(o => {
+      ctx.beginPath(); ctx.arc(box.x + o[0], y + o[1], 2, 0, Math.PI * 2); ctx.fill();
+    });
+    // סימן
+    ctx.fillStyle = "#fff";
+    ctx.font = "bold 26px Arial"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillText(box.answered ? "✓" : "?", box.x + box.w / 2, y + box.h / 2 + 1);
+    ctx.textBaseline = "alphabetic";
+  }
+
+  /* ----- דגל סיום מתנופף ----- */
+  function drawFlag() {
+    ctx.fillStyle = "#666";
+    ctx.fillRect(flag.x, flag.y, 5, flag.h);
+    ctx.fillStyle = "#FFD700";
+    ctx.beginPath(); ctx.arc(flag.x + 2.5, flag.y, 5, 0, Math.PI * 2); ctx.fill();
+    const wave = Math.sin(frame * 0.15) * 5;
+    ctx.fillStyle = "#E53935";
+    ctx.beginPath();
+    ctx.moveTo(flag.x + 5, flag.y + 4);
+    ctx.quadraticCurveTo(flag.x + 26, flag.y + 4 + wave, flag.x + 46, flag.y + 16);
+    ctx.quadraticCurveTo(flag.x + 26, flag.y + 22 + wave, flag.x + 5, flag.y + 30);
+    ctx.fill();
+  }
+
+  /* ----- ציור הדמות עם אנימציית הליכה ----- */
   function drawPlayer() {
     const p = player;
-    // גוף
+    const moving = Math.abs(p.vx) > 0.1 && p.onGround;
+    const legSwing = moving ? Math.sin(frame * 0.4) * 6 : 0;
+    const cx = p.x, top = p.y;
+    const dir = p.facing;
+
+    // רגליים (מתחלפות בהליכה)
+    ctx.fillStyle = "#1B3A6B";
+    ctx.fillRect(cx + 6, top + p.h - 10 + Math.max(0, legSwing), 9, 10);
+    ctx.fillRect(cx + p.w - 15, top + p.h - 10 + Math.max(0, -legSwing), 9, 10);
+    // נעליים
+    ctx.fillStyle = "#5A3210";
+    ctx.fillRect(cx + 4, top + p.h - 3 + Math.max(0, legSwing), 12, 4);
+    ctx.fillRect(cx + p.w - 16, top + p.h - 3 + Math.max(0, -legSwing), 12, 4);
+
+    // אוברול (גוף)
+    ctx.fillStyle = "#2E6BD6";
+    roundRect(cx + 4, top + 18, p.w - 8, p.h - 24, 4); ctx.fill();
+    // חולצה אדומה (כתפיים/ידיים)
     ctx.fillStyle = "#E53935";
-    ctx.fillRect(p.x, p.y + 16, p.w, p.h - 16);
-    // ראש
-    ctx.fillStyle = "#FFCC80";
-    ctx.fillRect(p.x + 4, p.y, p.w - 8, 18);
-    // כובע
+    ctx.fillRect(cx + 2, top + 16, p.w - 4, 8);
+    ctx.fillRect(cx - 1, top + 18, 6, 12);          // יד שמאל
+    ctx.fillRect(cx + p.w - 5, top + 18, 6, 12);    // יד ימין
+    // כפתורים
+    ctx.fillStyle = "#FFD700";
+    ctx.beginPath(); ctx.arc(cx + 11, top + 26, 2, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.arc(cx + p.w - 11, top + 26, 2, 0, 7); ctx.fill();
+
+    // ראש (פנים)
+    ctx.fillStyle = "#FFCC99";
+    roundRect(cx + 5, top + 1, p.w - 10, 17, 4); ctx.fill();
+    // כובע אדום
     ctx.fillStyle = "#C62828";
-    ctx.fillRect(p.x + 2, p.y - 4, p.w - 4, 8);
-    // עיניים (לפי כיוון)
-    ctx.fillStyle = "#000";
-    const eyeX = p.facing === 1 ? p.x + p.w - 12 : p.x + 8;
-    ctx.fillRect(eyeX, p.y + 6, 4, 4);
+    roundRect(cx + 1, top - 4, p.w - 2, 9, 3); ctx.fill();
+    ctx.fillRect(dir === 1 ? cx + p.w - 6 : cx - 4, top + 1, 10, 5); // מצחייה
+    // לוגו על הכובע
+    ctx.fillStyle = "#fff";
+    ctx.beginPath(); ctx.arc(cx + p.w / 2, top + 0.5, 3.5, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#C62828"; ctx.font = "bold 5px Arial"; ctx.textAlign = "center";
+    ctx.fillText("M", cx + p.w / 2, top + 2.5);
+    // עיניים + שפם
+    ctx.fillStyle = "#222";
+    const eyeX = dir === 1 ? cx + p.w - 13 : cx + 9;
+    ctx.fillRect(eyeX, top + 7, 3, 4);
+    ctx.fillStyle = "#5A3210";
+    ctx.fillRect(cx + 7, top + 13, p.w - 14, 3);    // שפם
+  }
+
+  /* ----- מלבן עם פינות מעוגלות ----- */
+  function roundRect(x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
   }
 
   /* ----- ציור ענן ----- */
   function drawCloud(x, y) {
-    ctx.fillStyle = "rgba(255,255,255,0.9)";
+    ctx.fillStyle = "rgba(255,255,255,0.92)";
     ctx.beginPath();
     ctx.arc(x, y, 22, 0, Math.PI * 2);
-    ctx.arc(x + 25, y + 5, 28, 0, Math.PI * 2);
+    ctx.arc(x + 25, y + 6, 28, 0, Math.PI * 2);
     ctx.arc(x + 55, y, 22, 0, Math.PI * 2);
+    ctx.arc(x + 30, y - 12, 20, 0, Math.PI * 2);
     ctx.fill();
   }
 
   /* ----- ציור ממשק עליון (HUD) ----- */
   function drawHUD() {
-    ctx.fillStyle = "rgba(0,0,0,0.55)";
-    ctx.fillRect(0, 0, canvas.width, 34);
-    ctx.fillStyle = "#fff";
-    ctx.font = "bold 16px Arial";
-    ctx.textAlign = "right";
-    ctx.fillText("שלב " + currentLevel + " / " + totalLevels, canvas.width - 12, 23);
-    ctx.textAlign = "left";
-    ctx.fillText("🪙 מטבעות כסף: " + silverCoins, 12, 23);
+    // רקע מדורג שקוף
+    const g = ctx.createLinearGradient(0, 0, 0, 40);
+    g.addColorStop(0, "rgba(0,0,0,0.5)");
+    g.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, canvas.width, 44);
+
+    // תג מטבעות (שמאל)
+    ctx.fillStyle = "rgba(0,0,0,0.4)";
+    roundRect(10, 8, 150, 26, 13); ctx.fill();
+    ctx.fillStyle = "#FFD11A";
+    ctx.beginPath(); ctx.arc(26, 21, 8, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#E0A500"; ctx.font = "bold 11px Arial"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillText("$", 26, 21);
+    ctx.fillStyle = "#fff"; ctx.font = "bold 15px Arial"; ctx.textAlign = "left";
+    ctx.fillText("מטבעות: " + silverCoins, 40, 21);
+    ctx.textBaseline = "alphabetic";
+
+    // תג שלב (ימין)
+    ctx.fillStyle = "rgba(0,0,0,0.4)";
+    roundRect(canvas.width - 150, 8, 140, 26, 13); ctx.fill();
+    ctx.fillStyle = "#fff"; ctx.font = "bold 15px Arial"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillText("🏁 שלב " + currentLevel + " / " + totalLevels, canvas.width - 80, 21);
+    ctx.textBaseline = "alphabetic";
   }
 
   /* ----- לולאת המשחק הראשית ----- */
   function loop() {
+    frame++;
     update();
+    updateParticles();
     draw();
     drawHUD();
     animationId = requestAnimationFrame(loop);
