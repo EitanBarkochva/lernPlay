@@ -108,6 +108,21 @@
     <button class="btn blue" onclick="addQuestion()">➕ הוסף שאלה</button>
   </div>
 
+  <div class="form-card ai-card">
+    <label>🤖 יצירת שאלות אוטומטית ב-AI</label>
+    <p class="muted">המערכת תיצור שאלות לפי הכיתה, המקצוע והנושא שבחרת.</p>
+    <div class="row">
+      <div>
+        <label>כמה שאלות?</label>
+        <input type="number" id="aiCount" value="10" min="1" max="30">
+      </div>
+      <div style="display:flex; align-items:flex-end;">
+        <button id="aiBtn" class="btn purple" onclick="generateAIQuestions()">✨ צור שאלות ב-AI</button>
+      </div>
+    </div>
+    <p id="aiStatus" class="ai-status"></p>
+  </div>
+
   <div id="questionsList" class="questions-list"></div>
 
   <button class="btn green big" onclick="finishGameCreation()">✅ סיום ויצירת קוד משחק</button>

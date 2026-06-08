@@ -133,6 +133,40 @@ function addQuestion() {
   renderQuestionsList();
 }
 
+/* ----- יצירת שאלות אוטומטית ב-AI ----- */
+async function generateAIQuestions() {
+  if (!draftGame) { alert("צור קודם משחק"); return; }
+  const status = document.getElementById("aiStatus");
+  const btn = document.getElementById("aiBtn");
+
+  const count = parseInt(document.getElementById("aiCount").value) || 10;
+  const gradeText = (document.getElementById("grade").selectedOptions[0]?.text || "")
+    .replace("כיתה", "").trim();
+  const subject = document.getElementById("subject").selectedOptions[0]?.text || "";
+  const topic = document.getElementById("topic").selectedOptions[0]?.text || "";
+  const diffMap = { easy: "קל", medium: "בינוני", hard: "קשה" };
+  const difficulty = diffMap[document.getElementById("qDifficulty").value] || "קל";
+
+  status.className = "ai-status";
+  status.textContent = "🤖 יוצר " + count + " שאלות... זה עשוי לקחת מספר שניות";
+  btn.disabled = true;
+
+  try {
+    const qs = await generateQuestionsAI({ subject, grade: gradeText, topic, count, difficulty });
+    if (!qs.length) { status.textContent = "לא התקבלו שאלות. נסה שוב."; return; }
+    draftGame.questions.push(...qs);
+    renderQuestionsList();
+    status.className = "ai-status ok";
+    status.textContent = "✅ נוספו " + qs.length + " שאלות! אפשר לערוך, להוסיף עוד, או לסיים.";
+  } catch (e) {
+    console.error(e);
+    status.className = "ai-status err";
+    status.textContent = "שגיאה: " + e.message;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
 /* ----- הצגת רשימת השאלות שנוספו ----- */
 function renderQuestionsList() {
   const list = document.getElementById("questionsList");

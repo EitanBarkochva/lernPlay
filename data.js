@@ -475,6 +475,40 @@ async function getLeaderboard(gradeFilter) {
 }
 
 /* ------------------------------------------------------------
+   generateQuestionsAI(params) - יצירת שאלות אוטומטית ב-AI
+   דרך ה-Edge Function ב-Supabase (שמקושר ל-Claude API).
+   params = { subject, grade, topic, count, difficulty }
+   מחזיר מערך שאלות בפורמט הפנימי של האפליקציה.
+   ------------------------------------------------------------ */
+async function generateQuestionsAI(params) {
+  const res = await fetch(SUPABASE_URL + "/functions/v1/generate-questions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      apikey: SUPABASE_ANON_KEY,
+      Authorization: "Bearer " + SUPABASE_ANON_KEY
+    },
+    body: JSON.stringify(params)
+  });
+  let data;
+  try { data = await res.json(); } catch (e) { throw new Error("תשובה לא תקינה מהשרת"); }
+  if (!res.ok || data.error) throw new Error(data.error || ("שגיאה " + res.status));
+
+  const diff = params.difficulty === "בינוני" ? "medium"
+             : params.difficulty === "קשה" ? "hard" : "easy";
+  return (data.questions || []).map((x, i) => ({
+    id: "qai_" + Date.now() + "_" + i,
+    text: x.q,
+    type: "multiple",
+    correctAnswer: x.correct,
+    wrongAnswers: Array.isArray(x.wrongs) ? x.wrongs : [],
+    difficulty: diff,
+    coins: 10,
+    explanation: x.expl || ""
+  }));
+}
+
+/* ------------------------------------------------------------
    generateGameCode() - קוד משחק אקראי בפורמט XY-1234.
    ------------------------------------------------------------ */
 function generateGameCode() {

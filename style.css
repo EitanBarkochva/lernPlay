@@ -63,7 +63,15 @@ h3 { margin: 12px 0; color: #2c3e50; }
 .btn:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0,0,0,.15); }
 .btn.green { background: #27ae60; }
 .btn.blue  { background: #2980b9; }
+.btn.purple{ background: #8e44ad; }
 .btn.big   { width: 100%; padding: 18px; font-size: 1.25rem; margin-top: 18px; }
+.btn:disabled { opacity: .6; cursor: default; }
+
+/* ----- כרטיס יצירת שאלות ב-AI ----- */
+.ai-card { border: 2px dashed #8e44ad; background: #faf5ff; }
+.ai-status { margin-top: 10px; font-weight: bold; min-height: 20px; color: #555; }
+.ai-status.ok  { color: #27ae60; }
+.ai-status.err { color: #e74c3c; }
 
 .btn-small { padding: 6px 12px; font-size: .9rem; border: none; border-radius: 8px; color: #fff; cursor: pointer; background: #7f8c8d; }
 .btn-danger { background: #e74c3c; }
