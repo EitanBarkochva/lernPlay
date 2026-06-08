@@ -30,6 +30,9 @@ const MarioGame = (function () {
   let answeredBoxes = 0;         // כמה תיבות שאלה כבר נענו
   let frame = 0;                 // מונה פריימים לאנימציות
   let particles = [];            // חלקיקי נצנוץ (איסוף מטבע)
+  let enemies = [];              // אויבים שמסתובבים על הקרקע
+  let spikes = [];               // מכשולי קוצים
+  let playerHurt = 0;            // פריימים של חוסר-פגיעות אחרי מכה (הבהוב)
 
   // צלילים פשוטים נוצרים ב-Web Audio (בלי קבצים חיצוניים)
   let audioCtx = null;
@@ -56,7 +59,9 @@ const MarioGame = (function () {
     jump:   () => beep(440, 0.15, "square"),
     coin:   () => beep(880, 0.12, "sine"),
     correct:() => { beep(660, 0.12); setTimeout(() => beep(990, 0.18), 120); },
-    wrong:  () => beep(160, 0.3, "sawtooth")
+    wrong:  () => beep(160, 0.3, "sawtooth"),
+    stomp:  () => { beep(520, 0.08); setTimeout(() => beep(300, 0.1), 80); },
+    hurt:   () => beep(120, 0.35, "sawtooth")
   };
 
   /* ------------------------------------------------------------
@@ -130,6 +135,25 @@ const MarioGame = (function () {
       coins.push({ x: x + 18, y: boxY - 28, r: 10, taken: false });
     }
 
+    // ----- אויבים ומכשולים -----
+    enemies = [];
+    spikes = [];
+    playerHurt = 0;
+
+    // אויב מסתובב במרכז כל מרווח בין תיבות (אפשר לקפוץ עליו!)
+    for (let i = 1; i < (end - start); i++) {
+      const ex = startX + i * gap - gap / 2;
+      enemies.push({
+        x: ex, y: groundY - 30, w: 30, h: 30,
+        dir: -1, minX: ex - 70, maxX: ex + 70, alive: true
+      });
+    }
+    // קוצים מופיעים משלב 2 והלאה (קושי הדרגתי)
+    if (n >= 2 && (end - start) >= 2) {
+      const spx = startX + gap * 0.85;
+      spikes.push({ x: spx, y: groundY - 18, w: 48, h: 18 });
+    }
+
     // דגל סיום אחרי התיבה האחרונה
     const lastX = startX + (count - 1) * gap;
     flag = { x: lastX + 220, y: groundY - 120, w: 12, h: 120 };
@@ -198,6 +222,36 @@ const MarioGame = (function () {
       }
     }
 
+    // ----- אויבים: תנועה והתנגשות -----
+    if (playerHurt > 0) playerHurt--;
+    for (const e of enemies) {
+      if (!e.alive) continue;
+      // סיור הלוך ושוב
+      e.x += e.dir * 1.2;
+      if (e.x < e.minX) e.dir = 1;
+      if (e.x > e.maxX) e.dir = -1;
+
+      // התנגשות עם הדמות
+      if (rectsOverlap(player, e)) {
+        const stomp = player.vy > 0 && (player.y + player.h - e.y) < 22;
+        if (stomp) {
+          // קפיצה על האויב -> מנצחים אותו
+          e.alive = false;
+          player.vy = -9;               // קפיצת ניתור
+          silverCoins++;                // בונוס
+          spawnSparkles(e.x + e.w / 2, e.y);
+          sounds.stomp();
+        } else if (playerHurt === 0) {
+          hurtPlayer();
+        }
+      }
+    }
+
+    // ----- מכשולי קוצים -----
+    for (const sp of spikes) {
+      if (playerHurt === 0 && rectsOverlap(player, sp)) hurtPlayer();
+    }
+
     // נגיעה בתיבת שאלה -> עצירת המשחק ופתיחת שאלה
     for (const box of questionBoxes) {
       if (!box.answered &&
@@ -220,6 +274,22 @@ const MarioGame = (function () {
     // עדכון מצלמה כך שהדמות בערך במרכז
     cameraX = player.x - canvas.width / 2;
     if (cameraX < 0) cameraX = 0;
+  }
+
+  /* ----- בדיקת חפיפה בין שני מלבנים ----- */
+  function rectsOverlap(a, b) {
+    return a.x + a.w > b.x && a.x < b.x + b.w &&
+           a.y + a.h > b.y && a.y < b.y + b.h;
+  }
+
+  /* ----- פגיעה בדמות: הדיפה אחורה, איבוד מטבעות, הבהוב קצר ----- */
+  function hurtPlayer() {
+    playerHurt = 90;                         // ~1.5 שניות חוסר-פגיעות
+    player.vy = -6;                           // קפיצה קלה
+    player.x -= player.facing * 45;           // הדיפה אחורה
+    if (player.x < 0) player.x = 0;
+    silverCoins = Math.max(0, silverCoins - 2);
+    sounds.hurt();
   }
 
   /* ----- מעבר לשלב הבא או סיום המשחק ----- */
@@ -319,6 +389,12 @@ const MarioGame = (function () {
     for (const p of platforms) {
       if (p.h > 30) drawGround(p); else drawBrick(p);
     }
+
+    // ----- מכשולי קוצים -----
+    for (const sp of spikes) drawSpike(sp);
+
+    // ----- אויבים -----
+    for (const e of enemies) { if (e.alive) drawEnemy(e); }
 
     // ----- מטבעות זהב מסתובבים -----
     for (const c of coins) {
@@ -452,8 +528,57 @@ const MarioGame = (function () {
     ctx.fill();
   }
 
+  /* ----- אויב (פטרייה חמודה שמסתובבת) ----- */
+  function drawEnemy(e) {
+    const wob = Math.sin(frame * 0.2) * 2;     // התנדנדות
+    const cx = e.x, top = e.y;
+    // רגליים
+    ctx.fillStyle = "#5A3210";
+    ctx.fillRect(cx + 3, top + e.h - 4 + wob, 8, 4);
+    ctx.fillRect(cx + e.w - 11, top + e.h - 4 - wob, 8, 4);
+    // גוף
+    ctx.fillStyle = "#A0522D";
+    roundRect(cx + 2, top + 8, e.w - 4, e.h - 10, 6); ctx.fill();
+    // כיפה
+    ctx.fillStyle = "#8B3A1D";
+    ctx.beginPath();
+    ctx.ellipse(cx + e.w / 2, top + 10, e.w / 2, 11, 0, Math.PI, 0);
+    ctx.fill();
+    // עיניים
+    ctx.fillStyle = "#fff";
+    ctx.fillRect(cx + 7, top + 12, 6, 7);
+    ctx.fillRect(cx + e.w - 13, top + 12, 6, 7);
+    ctx.fillStyle = "#000";
+    const look = e.dir < 0 ? 0 : 3;
+    ctx.fillRect(cx + 8 + look, top + 14, 3, 4);
+    ctx.fillRect(cx + e.w - 12 + look, top + 14, 3, 4);
+    // גבות כועסות
+    ctx.strokeStyle = "#000"; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(cx + 6, top + 11); ctx.lineTo(cx + 13, top + 13);
+    ctx.moveTo(cx + e.w - 6, top + 11); ctx.lineTo(cx + e.w - 13, top + 13); ctx.stroke();
+  }
+
+  /* ----- מכשול קוצים ----- */
+  function drawSpike(sp) {
+    ctx.fillStyle = "#9AA3AD";
+    const n = Math.floor(sp.w / 12);
+    for (let i = 0; i < n; i++) {
+      const x = sp.x + i * 12;
+      ctx.beginPath();
+      ctx.moveTo(x, sp.y + sp.h);
+      ctx.lineTo(x + 6, sp.y);
+      ctx.lineTo(x + 12, sp.y + sp.h);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.fillStyle = "#6B7280";
+    ctx.fillRect(sp.x, sp.y + sp.h - 3, sp.w, 3);
+  }
+
   /* ----- ציור הדמות עם אנימציית הליכה ----- */
   function drawPlayer() {
+    // הבהוב אחרי פגיעה - מדלגים על חלק מהפריימים
+    if (playerHurt > 0 && Math.floor(frame / 4) % 2 === 0) return;
     const p = player;
     const moving = Math.abs(p.vx) > 0.1 && p.onGround;
     const legSwing = moving ? Math.sin(frame * 0.4) * 6 : 0;
