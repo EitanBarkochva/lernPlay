@@ -438,6 +438,43 @@ async function listGames() {
 }
 
 /* ------------------------------------------------------------
+   getLeaderboard(gradeFilter) - טבלת אלופים: סיכום מטבעות לכל תלמיד.
+   מחזיר: [{ name, grade, totalCoins, games }] ממוין מהגבוה לנמוך.
+   ------------------------------------------------------------ */
+async function getLeaderboard(gradeFilter) {
+  let rows;
+  if (!USE_SUPABASE) {
+    const db = lsLoad();
+    rows = db.results.map(r => ({ name: r.studentName, grade: r.studentGrade, coins: r.totalCoins || 0 }));
+  } else {
+    const sessions = await sbSelect("game_sessions?select=student_id,total_coins");
+    const ids = [...new Set(sessions.map(s => s.student_id).filter(Boolean))];
+    const students = ids.length
+      ? await sbSelect("students?id=in.(" + ids.join(",") + ")&select=id,full_name,grade_id")
+      : [];
+    rows = sessions.map(s => {
+      const stu = students.find(x => x.id === s.student_id) || {};
+      return { name: stu.full_name || "תלמיד", grade: gradeName(stu.grade_id) || "", coins: s.total_coins || 0 };
+    });
+  }
+
+  // צבירה לפי תלמיד (שם + כיתה)
+  const map = new Map();
+  rows.forEach(r => {
+    const key = r.name + "|" + r.grade;
+    const e = map.get(key) || { name: r.name, grade: r.grade, totalCoins: 0, games: 0 };
+    e.totalCoins += r.coins;
+    e.games += 1;
+    map.set(key, e);
+  });
+
+  let list = [...map.values()];
+  if (gradeFilter) list = list.filter(e => e.grade === gradeFilter);
+  list.sort((a, b) => b.totalCoins - a.totalCoins);
+  return list.slice(0, 50);
+}
+
+/* ------------------------------------------------------------
    generateGameCode() - קוד משחק אקראי בפורמט XY-1234.
    ------------------------------------------------------------ */
 function generateGameCode() {

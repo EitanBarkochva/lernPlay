@@ -19,6 +19,7 @@
     <button class="big-btn teal"   onclick="showBrowse()">📚 בחר משחק מוכן<br><small>לפי כיתה ונושא</small></button>
     <button class="big-btn blue"   onclick="showScreen('studentLoginScreen')">🕹️ כניסה עם קוד<br><small>לתלמיד</small></button>
     <button class="big-btn purple" onclick="showScreen('quizOnlyScreen')">📝 שאלות בלי משחק</button>
+    <button class="big-btn gold-btn" onclick="showLeaderboard()">🏆 טבלת אלופים</button>
     <button class="big-btn orange" onclick="showScreen('teacherReportsScreen')">📊 צפייה בדוחות</button>
     <button class="big-btn pink"   onclick="showScreen('viewQuestionsScreen')">👀 צפייה בשאלות</button>
   </div>
@@ -121,6 +122,17 @@
     <button class="btn blue" onclick="copyCode()">📋 העתק קוד</button>
   </div>
   <button class="btn green" onclick="showScreen('homeScreen')">🏠 חזרה לדף הבית</button>
+</div>
+
+<!-- ============ טבלת אלופים ============ -->
+<div id="leaderboardScreen" class="screen">
+  <button class="back-btn" onclick="showScreen('homeScreen')">⬅ חזרה</button>
+  <h2>🏆 טבלת האלופים</h2>
+  <div class="form-card">
+    <label>סינון לפי כיתה</label>
+    <select id="lbGrade" onchange="renderLeaderboard()"></select>
+  </div>
+  <div id="leaderboardList" class="table-wrap"></div>
 </div>
 
 <!-- ============ בחירת משחק מוכן ============ -->

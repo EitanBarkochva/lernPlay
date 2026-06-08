@@ -49,6 +49,7 @@ h3 { margin: 12px 0; color: #2c3e50; }
 .big-btn.orange { background: #e67e22; }
 .big-btn.pink   { background: #e84393; }
 .big-btn.teal   { background: #16a085; }
+.big-btn.gold-btn { background: #f1c40f; color: #5a4500; }
 
 .demo-hint { text-align: center; background: #fff3cd; padding: 12px; border-radius: 12px; }
 
@@ -159,6 +160,7 @@ h3 { margin: 12px 0; color: #2c3e50; }
 .report-table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,.07); margin-top: 8px; }
 .report-table th, .report-table td { padding: 10px 8px; text-align: center; border-bottom: 1px solid #eee; font-size: .95rem; }
 .report-table th { background: #2c3e50; color: #fff; }
+.report-table .lb-top { background: #fff8e1; font-weight: bold; font-size: 1.05rem; }
 .report-table .row-ok { background: #f0fff4; }
 .report-table .row-bad { background: #fff5f5; }
 .report-table .clickable { cursor: pointer; }

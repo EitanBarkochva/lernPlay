@@ -189,6 +189,58 @@ function copyCode() {
 }
 
 /* ============================================================
+   טבלת אלופים - מי אסף הכי הרבה מטבעות
+   ============================================================ */
+let leaderboardData = [];
+
+async function showLeaderboard() {
+  showScreen("leaderboardScreen");
+  const c = document.getElementById("leaderboardList");
+  c.innerHTML = "<p class='muted'>טוען...</p>";
+  try {
+    leaderboardData = await getLeaderboard();
+  } catch (e) {
+    console.error(e);
+    c.innerHTML = "<p class='muted'>שגיאה בטעינת הטבלה.</p>";
+    return;
+  }
+  // מילוי סינון כיתות
+  const sel = document.getElementById("lbGrade");
+  sel.innerHTML = "<option value=''>כל הכיתות</option>";
+  [...new Set(leaderboardData.map(e => e.grade).filter(Boolean))]
+    .forEach(g => sel.add(new Option("כיתה " + g, g)));
+  renderLeaderboard();
+}
+
+function renderLeaderboard() {
+  const filter = document.getElementById("lbGrade").value;
+  let list = leaderboardData.slice();
+  if (filter) list = list.filter(e => e.grade === filter);
+
+  const c = document.getElementById("leaderboardList");
+  if (!list.length) {
+    c.innerHTML = "<p class='muted'>עדיין אין תוצאות — שחקו כדי להופיע כאן! 🎮</p>";
+    return;
+  }
+
+  const medals = ["🥇", "🥈", "🥉"];
+  const rows = list.map((e, i) => `
+    <tr class="${i < 3 ? 'lb-top' : ''}">
+      <td>${medals[i] || (i + 1)}</td>
+      <td>${escapeHtml(e.name)}</td>
+      <td>${escapeHtml(e.grade)}</td>
+      <td>💰 ${e.totalCoins}</td>
+      <td>${e.games}</td>
+    </tr>`).join("");
+
+  c.innerHTML = `
+    <table class="report-table">
+      <thead><tr><th>#</th><th>שם</th><th>כיתה</th><th>סך מטבעות</th><th>משחקים</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+/* ============================================================
    בחירת משחק מוכן (browse) - רשימת כל המשחקים לפי כיתה ונושא
    ============================================================ */
 let browseGames = [];   // המשחקים שנטענו לרשימה
