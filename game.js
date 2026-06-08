@@ -33,6 +33,10 @@ const MarioGame = (function () {
   let enemies = [];              // אויבים שמסתובבים על הקרקע
   let spikes = [];               // מכשולי קוצים
   let playerHurt = 0;            // פריימים של חוסר-פגיעות אחרי מכה (הבהוב)
+  let lives = 3;                 // לבבות (חיים)
+  let floatTexts = [];           // טקסטים מרחפים (בונוסים)
+  let squash = 0;                // אנימציית מעיכה בנחיתה
+  let wasOnGround = true;        // לזיהוי רגע הנחיתה
 
   // צלילים פשוטים נוצרים ב-Web Audio (בלי קבצים חיצוניים)
   let audioCtx = null;
@@ -86,6 +90,8 @@ const MarioGame = (function () {
     silverCoins = 0;
     currentLevel = 1;
     answeredBoxes = 0;
+    lives = 3;
+    floatTexts = [];
 
     buildLevel(currentLevel);
     bindControls();
@@ -124,15 +130,12 @@ const MarioGame = (function () {
     const startX = 420, gap = 260;
     for (let i = 0; i < end - start; i++) {
       const x = startX + i * gap;
-      const high = (i % 2 === 1);                 // כל תיבה שנייה גבוהה (דורשת קפיצה)
-      const boxY = high ? groundY - 150 : groundY - 80;
-      if (high) {
-        // פלטפורמה קטנה מתחת לתיבה הגבוהה כדי להגיע אליה
-        platforms.push({ x: x - 28, y: groundY - 96, w: 92, h: 18 });
-      }
-      questionBoxes.push({ x: x, y: boxY, w: 36, h: 36, questionIndex: start + i, answered: false });
-      // מטבע כסף ליד כל תיבה
-      coins.push({ x: x + 18, y: boxY - 28, r: 10, taken: false });
+      // התיבה יושבת על הקרקע, ישירות בנתיב -> הדמות בהכרח נתקלת בה
+      questionBoxes.push({ x: x, y: groundY - 36, w: 40, h: 36, questionIndex: start + i, answered: false });
+      // מטבע כסף גבוה לתגמול על קפיצה
+      coins.push({ x: x + 20, y: groundY - 130, r: 10, taken: false });
+      // מטבע נמוך נגיש
+      coins.push({ x: x - 90, y: groundY - 70, r: 10, taken: false });
     }
 
     // ----- אויבים ומכשולים -----
@@ -140,12 +143,14 @@ const MarioGame = (function () {
     spikes = [];
     playerHurt = 0;
 
+    // מהירות אויבים גדלה עם השלבים
+    const enemySpeed = 1.2 + (currentLevel - 1) * 0.5;
     // אויב מסתובב במרכז כל מרווח בין תיבות (אפשר לקפוץ עליו!)
     for (let i = 1; i < (end - start); i++) {
       const ex = startX + i * gap - gap / 2;
       enemies.push({
         x: ex, y: groundY - 30, w: 30, h: 30,
-        dir: -1, minX: ex - 70, maxX: ex + 70, alive: true
+        dir: -1, speed: enemySpeed, minX: ex - 70, maxX: ex + 70, alive: true
       });
     }
     // קוצים מופיעים משלב 2 והלאה (קושי הדרגתי)
@@ -209,6 +214,10 @@ const MarioGame = (function () {
         player.onGround = true;
       }
     }
+    // אנימציית מעיכה ברגע הנחיתה
+    if (player.onGround && !wasOnGround) squash = 8;
+    wasOnGround = player.onGround;
+    if (squash > 0) squash--;
 
     // איסוף מטבעות כסף
     for (const c of coins) {
@@ -226,8 +235,8 @@ const MarioGame = (function () {
     if (playerHurt > 0) playerHurt--;
     for (const e of enemies) {
       if (!e.alive) continue;
-      // סיור הלוך ושוב
-      e.x += e.dir * 1.2;
+      // סיור הלוך ושוב (מהירות לפי השלב)
+      e.x += e.dir * (e.speed || 1.2);
       if (e.x < e.minX) e.dir = 1;
       if (e.x > e.maxX) e.dir = -1;
 
@@ -235,11 +244,12 @@ const MarioGame = (function () {
       if (rectsOverlap(player, e)) {
         const stomp = player.vy > 0 && (player.y + player.h - e.y) < 22;
         if (stomp) {
-          // קפיצה על האויב -> מנצחים אותו
+          // קפיצה על האויב -> מנצחים אותו + מטבע-על בונוס
           e.alive = false;
-          player.vy = -9;               // קפיצת ניתור
-          silverCoins++;                // בונוס
+          player.vy = -10;              // קפיצת ניתור
+          silverCoins += 5;             // בונוס מטבע-על
           spawnSparkles(e.x + e.w / 2, e.y);
+          floatTexts.push({ x: e.x + e.w / 2, y: e.y, text: "+5", life: 50 });
           sounds.stomp();
         } else if (playerHurt === 0) {
           hurtPlayer();
@@ -264,11 +274,17 @@ const MarioGame = (function () {
       }
     }
 
-    // הגעה לדגל = סיום שלב (רק אם כל תיבות השאלה נענו)
-    const allAnswered = questionBoxes.every(b => b.answered);
-    if (allAnswered &&
-        player.x + player.w > flag.x && player.x < flag.x + flag.w) {
-      nextLevel();
+    // הגעה לדגל
+    if (player.x + player.w > flag.x && player.x < flag.x + flag.w) {
+      const nextBox = questionBoxes.find(b => !b.answered);
+      if (!nextBox) {
+        nextLevel();                          // כל השאלות נענו -> שלב הבא
+      } else {
+        // רשת ביטחון: אם דילגו על שאלה -> פותחים אותה כדי שלא ייתקעו
+        paused = true;
+        activeBox = nextBox;
+        if (onQuestion) onQuestion(nextBox.questionIndex);
+      }
     }
 
     // עדכון מצלמה כך שהדמות בערך במרכז
@@ -282,14 +298,25 @@ const MarioGame = (function () {
            a.y + a.h > b.y && a.y < b.y + b.h;
   }
 
-  /* ----- פגיעה בדמות: הדיפה אחורה, איבוד מטבעות, הבהוב קצר ----- */
+  /* ----- פגיעה בדמות: איבוד לב, הדיפה אחורה, הבהוב קצר ----- */
   function hurtPlayer() {
+    lives--;
     playerHurt = 90;                         // ~1.5 שניות חוסר-פגיעות
     player.vy = -6;                           // קפיצה קלה
     player.x -= player.facing * 45;           // הדיפה אחורה
     if (player.x < 0) player.x = 0;
     silverCoins = Math.max(0, silverCoins - 2);
     sounds.hurt();
+
+    if (lives <= 0) {
+      // נגמרו הלבבות -> חוזרים לתחילת השלב עם לבבות חדשים (עדין, בלי "המשחק נגמר")
+      lives = 3;
+      playerHurt = 120;
+      player.x = 60;
+      player.y = canvas.height - 50 - 60;
+      player.vx = 0; player.vy = 0;
+      floatTexts.push({ x: player.x + 40, y: player.y, text: "התחלה מחדש", life: 70 });
+    }
   }
 
   /* ----- מעבר לשלב הבא או סיום המשחק ----- */
@@ -340,18 +367,30 @@ const MarioGame = (function () {
     }
   }
 
-  /* ----- עדכון וציור חלקיקים ----- */
+  /* ----- עדכון וציור חלקיקים + טקסטים מרחפים ----- */
   function updateParticles() {
     for (const p of particles) {
       p.x += p.vx; p.y += p.vy; p.vy += 0.2; p.life--;
     }
     particles = particles.filter(p => p.life > 0);
+    for (const t of floatTexts) { t.y -= 0.8; t.life--; }
+    floatTexts = floatTexts.filter(t => t.life > 0);
   }
   function drawParticles() {
     for (const p of particles) {
       ctx.globalAlpha = Math.max(0, p.life / 30);
       ctx.fillStyle = p.color;
       ctx.fillRect(p.x - 2, p.y - 2, 4, 4);
+    }
+    ctx.globalAlpha = 1;
+    // טקסטים מרחפים (בונוסים)
+    for (const t of floatTexts) {
+      ctx.globalAlpha = Math.max(0, t.life / 50);
+      ctx.fillStyle = "#FFD700";
+      ctx.strokeStyle = "#7a5a00"; ctx.lineWidth = 3;
+      ctx.font = "bold 18px Arial"; ctx.textAlign = "center";
+      ctx.strokeText(t.text, t.x, t.y);
+      ctx.fillText(t.text, t.x, t.y);
     }
     ctx.globalAlpha = 1;
   }
@@ -580,6 +619,29 @@ const MarioGame = (function () {
     // הבהוב אחרי פגיעה - מדלגים על חלק מהפריימים
     if (playerHurt > 0 && Math.floor(frame / 4) % 2 === 0) return;
     const p = player;
+
+    // אנימציית מעיכה/מתיחה (squash & stretch)
+    let sx = 1, sy = 1;
+    if (squash > 0) { sx = 1.25; sy = 0.75; }          // נחיתה: רחב ונמוך
+    else if (!p.onGround) {                              // קפיצה: צר וגבוה
+      if (p.vy < 0) { sx = 0.85; sy = 1.18; }
+      else { sx = 0.95; sy = 1.08; }
+    }
+    if (sx !== 1 || sy !== 1) {
+      ctx.save();
+      ctx.translate(p.x + p.w / 2, p.y + p.h);          // עוגן בתחתית
+      ctx.scale(sx, sy);
+      ctx.translate(-(p.x + p.w / 2), -(p.y + p.h));
+      drawPlayerBody();
+      ctx.restore();
+      return;
+    }
+    drawPlayerBody();
+  }
+
+  /* ----- גוף הדמות (מופרד לצורך אנימציית מעיכה) ----- */
+  function drawPlayerBody() {
+    const p = player;
     const moving = Math.abs(p.vx) > 0.1 && p.onGround;
     const legSwing = moving ? Math.sin(frame * 0.4) * 6 : 0;
     const cx = p.x, top = p.y;
@@ -675,6 +737,24 @@ const MarioGame = (function () {
     ctx.fillStyle = "#fff"; ctx.font = "bold 15px Arial"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
     ctx.fillText("🏁 שלב " + currentLevel + " / " + totalLevels, canvas.width - 80, 21);
     ctx.textBaseline = "alphabetic";
+
+    // לבבות (מרכז)
+    for (let i = 0; i < 3; i++) {
+      drawHeart(canvas.width / 2 - 30 + i * 22, 14, 8, i < lives);
+    }
+  }
+
+  /* ----- ציור לב (מלא/ריק) ----- */
+  function drawHeart(x, y, s, filled) {
+    ctx.beginPath();
+    ctx.moveTo(x, y + s * 0.3);
+    ctx.bezierCurveTo(x, y, x - s, y, x - s, y + s * 0.4);
+    ctx.bezierCurveTo(x - s, y + s, x, y + s * 1.1, x, y + s * 1.4);
+    ctx.bezierCurveTo(x, y + s * 1.1, x + s, y + s, x + s, y + s * 0.4);
+    ctx.bezierCurveTo(x + s, y, x, y, x, y + s * 0.3);
+    ctx.closePath();
+    if (filled) { ctx.fillStyle = "#E53935"; ctx.fill(); }
+    else { ctx.fillStyle = "rgba(255,255,255,0.25)"; ctx.fill(); ctx.strokeStyle = "#fff"; ctx.lineWidth = 1.5; ctx.stroke(); }
   }
 
   /* ----- לולאת המשחק הראשית ----- */
