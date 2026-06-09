@@ -57,6 +57,13 @@ h3 { margin: 12px 0; color: #2c3e50; }
 .exam-grade { font-size: 3.4rem; font-weight: bold; text-align: center; margin: 8px 0; }
 .exam-grade.pass { color: #27ae60; }
 .exam-grade.fail { color: #e74c3c; }
+
+/* פאנל שליחת מייל */
+.email-panel { border: 2px dashed #2980b9; background: #f4f9ff; }
+.email-btns { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+.email-status { margin-top: 10px; min-height: 18px; }
+.email-status.ok { color: #27ae60; }
+.email-status.err { color: #e74c3c; }
 .big-btn.gold-btn { background: #f1c40f; color: #5a4500; }
 .big-btn.red-btn { background: #c0392b; }
 

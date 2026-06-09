@@ -485,6 +485,22 @@ async function getLeaderboard(gradeFilter) {
 }
 
 /* ------------------------------------------------------------
+   sendReportEmail({to, subject, body}) - שליחת מייל אמיתי דרך
+   Edge Function (Resend). זורק שגיאה אם נכשל / לא מוגדר.
+   ------------------------------------------------------------ */
+async function sendReportEmail(params) {
+  const res = await fetch(SUPABASE_URL + "/functions/v1/send-report", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY },
+    body: JSON.stringify(params)
+  });
+  let data;
+  try { data = await res.json(); } catch (e) { throw new Error("תשובה לא תקינה מהשרת"); }
+  if (!res.ok || data.error) throw new Error(data.error || ("שגיאה " + res.status));
+  return data;
+}
+
+/* ------------------------------------------------------------
    getBandGames() - משחקי אוצר המילים לפי Bands (אנגלית).
    מחזיר אובייקט { "Band I": [{code,title}], "Band II": [...], ... }
    ------------------------------------------------------------ */

@@ -833,7 +833,25 @@ function showExamResult(correct, total, pct, timedOut) {
         <tbody>${rows}</tbody>
       </table>
     </div>`;
+
+  // פאנל שליחת מייל
+  lastEmail = {
+    subject: "תוצאת מבחן - " + examName + " - " + examGame.title,
+    body: buildExamEmailBody(correct, total, pct)
+  };
+  mountEmailPanel("examEmail", examGame.creatorEmail || "");
+
   showScreen("examResultScreen");
+}
+
+function buildExamEmailBody(correct, total, pct) {
+  let b = "שלום,\n\n";
+  b += "הנבחן/ת " + examName + " סיים/ה מבחן.\n\n";
+  b += "מקצוע/נושא: " + (examGame.subject || "") + " — " + examGame.title + "\n";
+  b += "ציון: " + pct + "%\n";
+  b += "תשובות נכונות: " + correct + " מתוך " + total + "\n";
+  b += "תאריך: " + new Date().toLocaleString("he-IL") + "\n";
+  return b;
 }
 
 function quitExam() {
@@ -1104,34 +1122,73 @@ function showStudentReport(result, correctCount, wrongCount) {
       <tbody>${tbody}</tbody>
     </table>`;
 
-  // כפתור מייל למורה
-  setupMailButton(game, result, correctCount, wrongCount);
+  // פאנל שליחת מייל (mailto + אוטומטי)
+  lastEmail = {
+    subject: "דוח תוצאות - " + result.studentName + " - " + game.title,
+    body: buildStudentEmailBody(game, result, correctCount, wrongCount)
+  };
+  mountEmailPanel("reportEmail", game.creatorEmail || "");
 
   showScreen("studentReportScreen");
 }
 
-/* ----- כפתור פתיחת מייל למורה (mailto) ----- */
-function setupMailButton(game, result, correctCount, wrongCount) {
-  const btn = document.getElementById("mailTeacherBtn");
-  if (!game.creatorEmail) { btn.style.display = "none"; return; }
-  btn.style.display = "inline-block";
+function buildStudentEmailBody(game, result, correctCount, wrongCount) {
+  let b = "שלום " + (game.creatorName || "") + ",\n\n";
+  b += "התלמיד/ה " + result.studentName + " (כיתה " + result.studentGrade + ") סיים/ה את המשחק.\n\n";
+  b += "מקצוע: " + game.subject + "\n";
+  b += "משחק: " + game.title + "\n";
+  b += "תשובות נכונות: " + correctCount + "\n";
+  b += "תשובות שגויות: " + wrongCount + "\n";
+  b += "מטבעות זהב: " + result.goldCoins + " | כסף: " + result.silverCoins + " | סך הכל: " + result.totalCoins + "\n";
+  b += "שלב אחרון: " + result.currentLevel + "\n";
+  b += "תאריך: " + result.finishedAt + "\n";
+  return b;
+}
 
-  const subject = encodeURIComponent("דוח תוצאות - " + result.studentName + " - " + game.title);
-  let body = "שלום " + game.creatorName + ",\n\n";
-  body += "התלמיד/ה " + result.studentName + " (כיתה " + result.studentGrade + ") סיים/ה את המשחק.\n\n";
-  body += "מקצוע: " + game.subject + "\n";
-  body += "תשובות נכונות: " + correctCount + "\n";
-  body += "תשובות שגויות: " + wrongCount + "\n";
-  body += "מטבעות זהב: " + result.goldCoins + "\n";
-  body += "מטבעות כסף: " + result.silverCoins + "\n";
-  body += "סך מטבעות: " + result.totalCoins + "\n";
-  body += "שלב אחרון: " + result.currentLevel + "\n";
-  body += "תאריך: " + result.finishedAt + "\n";
+/* ============================================================
+   שליחת דוח במייל (mailto + שליחה אוטומטית דרך Resend)
+   ============================================================ */
+let lastEmail = { subject: "", body: "" };
 
-  btn.onclick = () => {
-    window.location.href = "mailto:" + game.creatorEmail +
-      "?subject=" + subject + "&body=" + encodeURIComponent(body);
-  };
+function mountEmailPanel(mountId, defaultTo) {
+  const el = document.getElementById(mountId);
+  if (!el) return;
+  el.innerHTML = `
+    <div class="form-card email-panel">
+      <label>📧 שליחת הדוח במייל למורה / הורה</label>
+      <input type="email" class="emailTo" placeholder="כתובת מייל" value="${escapeAttr(defaultTo || "")}">
+      <div class="email-btns">
+        <button class="btn blue" onclick="emailMailto(this)">📧 פתח באפליקציית המייל</button>
+        <button class="btn green" onclick="emailAuto(this)">🚀 שלח אוטומטית</button>
+      </div>
+      <p class="ai-status email-status"></p>
+    </div>`;
+}
+
+function emailMailto(btn) {
+  const panel = btn.closest(".email-panel");
+  const to = panel.querySelector(".emailTo").value.trim();
+  window.location.href = "mailto:" + encodeURIComponent(to) +
+    "?subject=" + encodeURIComponent(lastEmail.subject) +
+    "&body=" + encodeURIComponent(lastEmail.body);
+}
+
+async function emailAuto(btn) {
+  const panel = btn.closest(".email-panel");
+  const to = panel.querySelector(".emailTo").value.trim();
+  const status = panel.querySelector(".email-status");
+  if (!to) { status.className = "ai-status email-status err"; status.textContent = "נא להזין כתובת מייל"; return; }
+  status.className = "ai-status email-status"; status.textContent = "שולח...";
+  btn.disabled = true;
+  try {
+    await sendReportEmail({ to: to, subject: lastEmail.subject, body: lastEmail.body });
+    status.className = "ai-status email-status ok";
+    status.textContent = "✅ נשלח בהצלחה ל-" + to;
+  } catch (e) {
+    console.error(e);
+    status.className = "ai-status email-status err";
+    status.textContent = "לא נשלח אוטומטית: " + e.message + " — אפשר ללחוץ על 'פתח באפליקציית המייל'.";
+  } finally { btn.disabled = false; }
 }
 
 /* ============================================================
