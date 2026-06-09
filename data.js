@@ -581,6 +581,32 @@ async function patchMatch(code, fields) {
   return upd[0];
 }
 
+/* recordDuelWinner(code, winnerName) - רישום המנצח (פעם אחת בלבד).
+   הסינון winner_name=is.null מבטיח שרק הכתיבה הראשונה נרשמת. */
+async function recordDuelWinner(code, winnerName) {
+  if (!winnerName) {
+    // תיקו - רק מסמנים שהסתיים
+    await sbUpdate("matches?match_code=ilike." + enc(code), { status: "finished" });
+    return;
+  }
+  await sbUpdate(
+    "matches?match_code=ilike." + enc(code) + "&winner_name=is.null",
+    { winner_name: winnerName, status: "finished" }
+  );
+}
+
+/* getDuelWins() - טבלת ניצחונות: כמה ניצח כל שחקן */
+async function getDuelWins() {
+  if (!USE_SUPABASE) return [];
+  const rows = await sbSelect("matches?winner_name=not.is.null&select=winner_name");
+  const map = {};
+  rows.forEach(r => { if (r.winner_name) map[r.winner_name] = (map[r.winner_name] || 0) + 1; });
+  return Object.entries(map)
+    .map(([name, wins]) => ({ name, wins }))
+    .sort((a, b) => b.wins - a.wins)
+    .slice(0, 50);
+}
+
 /* getMatchQuestions(match) - שאלות התחרות לפי הסדר השמור */
 async function getMatchQuestions(match) {
   const game = await getGameByCode(match.game_code);

@@ -65,6 +65,12 @@ h3 { margin: 12px 0; color: #2c3e50; }
 .duel-mini { font-size: .8rem; opacity: .85; }
 .duel-vs { font-size: 1.2rem; font-weight: bold; color: #f1c40f; }
 
+/* טיימר השאלה */
+.duel-timer { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+.timer-bar { flex: 1; height: 14px; background: #eee; border-radius: 7px; overflow: hidden; }
+.timer-fill { height: 100%; border-radius: 7px; transition: width 1s linear, background .3s; }
+.timer-num { font-weight: bold; font-size: 1.1rem; min-width: 56px; text-align: left; }
+
 .demo-hint { text-align: center; background: #fff3cd; padding: 12px; border-radius: 12px; }
 
 /* ----- כפתורים כלליים ----- */

@@ -162,7 +162,14 @@
   <div class="home-buttons">
     <button class="big-btn green" onclick="showScreen('duelCreateScreen')">➕ צור תחרות<br><small>קבל קוד ושלח לחבר</small></button>
     <button class="big-btn blue" onclick="showScreen('duelJoinScreen')">🔗 הצטרף לתחרות<br><small>עם קוד מחבר</small></button>
+    <button class="big-btn gold-btn" onclick="showDuelWins()">🏅 טבלת ניצחונות<br><small>מי ניצח הכי הרבה</small></button>
   </div>
+</div>
+
+<div id="duelWinsScreen" class="screen">
+  <button class="back-btn" onclick="showScreen('duelHomeScreen')">⬅ חזרה</button>
+  <h2>🏅 טבלת ניצחונות</h2>
+  <div id="duelWinsList" class="table-wrap"></div>
 </div>
 
 <div id="duelCreateScreen" class="screen">
