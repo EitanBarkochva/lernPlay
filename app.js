@@ -8,6 +8,7 @@ let draftGame = null;       // המשחק שנמצא בבנייה (לפני יצ
 
 // ----- מצב זמני של תלמיד שמשחק -----
 let activeGame = null;      // המשחק שהתלמיד משחק בו כרגע
+let activeEngine = null;    // מנוע המשחק הפעיל (MarioGame / PacmanGame)
 let student = null;         // פרטי התלמיד הנוכחי
 let studentAnswers = [];    // תשובות התלמיד (לדוח)
 let currentQuestionIndex = 0;
@@ -648,16 +649,25 @@ async function startGame() {
   currentAttempts = 0;
   quizMode = false;
 
-  // עוברים למסך המשחק ומפעילים את מנוע מריו
+  // בחירת סוג המשחק (מריו / פאקמן) - אותן שאלות, מנוע שונה
+  const style = (document.getElementById("gameStyle") || {}).value || "mario";
+  activeEngine = (style === "pacman") ? PacmanGame : MarioGame;
+
+  // עוברים למסך המשחק ומציגים את פקדי המגע המתאימים
   showScreen("marioGameScreen");
   document.getElementById("gameTitleLabel").textContent = found.title + " — " + found.subject;
+  document.getElementById("marioControls").style.display = (style === "pacman") ? "none" : "flex";
+  document.getElementById("pacmanControls").style.display = (style === "pacman") ? "flex" : "none";
+  document.getElementById("controlsHint").textContent = (style === "pacman")
+    ? "מקלדת: חיצים לכל הכיוונים. אסוף נקודות, הגע ל-❓ כדי לענות, והיזהר מהרוחות!"
+    : "מקלדת: חיצים ימינה/שמאלה לתנועה, רווח לקפיצה. הגע לתיבת ה-❓ כדי לענות על שאלה!";
 
   const canvas = document.getElementById("gameCanvas");
-  // התאמת גודל הקנבס
+  // התאמת גודל הקנבס (מריו משתמש בגודל הזה; פאקמן מגדיר גודל משלו)
   canvas.width = Math.min(900, window.innerWidth - 20);
   canvas.height = 420;
 
-  MarioGame.init({
+  activeEngine.init({
     canvas: canvas,
     game: found,
     onQuestion: openQuestion,           // נקרא כשנוגעים בתיבת שאלה
@@ -738,7 +748,7 @@ function checkAnswer(answer) {
     setTimeout(() => {
       closeQuestionModal();
       if (quizMode) nextQuizQuestion();
-      else MarioGame.resume(true);
+      else activeEngine.resume(true);
     }, 1200);
 
   } else {
@@ -755,13 +765,13 @@ function checkAnswer(answer) {
       setTimeout(() => {
         closeQuestionModal();
         if (quizMode) nextQuizQuestion();
-        else MarioGame.resume(true); // ממשיכים הלאה גם אם טעה (כדי לא להיתקע)
+        else activeEngine.resume(true); // ממשיכים הלאה גם אם טעה (כדי לא להיתקע)
       }, 1800);
     } else if (!quizMode) {
       // במצב משחק - חוזרים למשחק לנסות שוב להגיע לתיבה
       setTimeout(() => {
         closeQuestionModal();
-        MarioGame.resume(false);
+        activeEngine.resume(false);
       }, 1500);
     }
     // במצב quiz נשארים על אותה שאלה לניסיון נוסף
@@ -791,8 +801,8 @@ function closeQuestionModal() {
    7. סיום משחק מריו -> שמירת דוח והצגתו
    ============================================================ */
 function finishMarioGame() {
-  const silver = MarioGame.getSilverCoins();
-  const lastLevel = MarioGame.getCurrentLevel();
+  const silver = activeEngine.getSilverCoins();
+  const lastLevel = activeEngine.getCurrentLevel();
   saveAndShowReport(silver, lastLevel, true);
 }
 
@@ -1075,12 +1085,12 @@ async function viewQuestions() {
 /* ============================================================
    פקדי מגע למשחק (כפתורים במסך טלפון)
    ============================================================ */
-function touchPress(dir)   { MarioGame.press(dir); }
-function touchRelease(dir) { MarioGame.release(dir); }
+function touchPress(dir)   { activeEngine.press(dir); }
+function touchRelease(dir) { activeEngine.release(dir); }
 
 /* ----- יציאה מהמשחק חזרה לדף הבית ----- */
 function quitGame() {
-  MarioGame.stop();
+  activeEngine.stop();
   closeQuestionModal();
   showScreen("homeScreen");
 }

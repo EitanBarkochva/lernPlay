@@ -152,6 +152,17 @@ h3 { margin: 12px 0; color: #2c3e50; }
 .touch-btn.jump { background: #27ae60; width: 130px; font-size: 1.1rem; }
 .touch-btn:active { transform: translateY(3px); }
 
+/* פקד 4 כיוונים לפאקמן */
+.dpad {
+  display: grid; grid-template-columns: repeat(3, 64px); grid-template-rows: repeat(3, 56px);
+  gap: 6px; justify-content: center; margin: 14px auto 0;
+}
+.dpad .touch-btn { width: 64px; height: 56px; }
+.dpad-up    { grid-column: 2; grid-row: 1; }
+.dpad-left  { grid-column: 1; grid-row: 2; }
+.dpad-right { grid-column: 3; grid-row: 2; }
+.dpad-down  { grid-column: 2; grid-row: 3; }
+
 /* ----- חלון שאלה (מודאל) ----- */
 .modal {
   display: none; position: fixed; inset: 0; background: rgba(0,0,0,.6);

@@ -260,6 +260,11 @@
     <input type="text" id="studentGrade" placeholder="א">
     <label>קוד משחק</label>
     <input type="text" id="gameCode" placeholder="DEMO-A1">
+    <label>בחר סוג משחק 🎮</label>
+    <select id="gameStyle">
+      <option value="mario">🍄 סופר מריו</option>
+      <option value="pacman">🟡 פאקמן</option>
+    </select>
     <button class="btn green big" onclick="startGame()">🚀 התחל משחק</button>
   </div>
 </div>
@@ -272,13 +277,22 @@
   </div>
   <canvas id="gameCanvas" width="900" height="420"></canvas>
 
-  <!-- כפתורי מגע לטלפון -->
-  <div class="touch-controls">
+  <!-- פקדי מגע - מריו (שמאל/ימין/קפיצה) -->
+  <div class="touch-controls" id="marioControls">
     <button class="touch-btn" onpointerdown="touchPress('ArrowRight')" onpointerup="touchRelease('ArrowRight')" onpointerleave="touchRelease('ArrowRight')">▶</button>
     <button class="touch-btn jump" onpointerdown="touchPress(' ')" onpointerup="touchRelease(' ')" onpointerleave="touchRelease(' ')">⬆ קפיצה</button>
     <button class="touch-btn" onpointerdown="touchPress('ArrowLeft')" onpointerup="touchRelease('ArrowLeft')" onpointerleave="touchRelease('ArrowLeft')">◀</button>
   </div>
-  <p class="controls-hint">מקלדת: חיצים ימינה/שמאלה לתנועה, רווח לקפיצה. הגע לתיבת ה-❓ כדי לענות על שאלה!</p>
+
+  <!-- פקדי מגע - פאקמן (4 כיוונים) -->
+  <div class="dpad" id="pacmanControls" style="display:none">
+    <button class="touch-btn dpad-up" onpointerdown="touchPress('ArrowUp')">▲</button>
+    <button class="touch-btn dpad-left" onpointerdown="touchPress('ArrowLeft')">◀</button>
+    <button class="touch-btn dpad-right" onpointerdown="touchPress('ArrowRight')">▶</button>
+    <button class="touch-btn dpad-down" onpointerdown="touchPress('ArrowDown')">▼</button>
+  </div>
+
+  <p class="controls-hint" id="controlsHint">מקלדת: חיצים ימינה/שמאלה לתנועה, רווח לקפיצה. הגע לתיבת ה-❓ כדי לענות על שאלה!</p>
 </div>
 
 <!-- ============ חלון שאלה (מודאל) ============ -->
@@ -348,6 +362,7 @@
 <!-- סדר הטעינה חשוב: קודם הנתונים, אחר כך המשחק, ולבסוף הלוגיקה -->
 <script src="data.js"></script>
 <script src="game.js"></script>
+<script src="pacman.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
