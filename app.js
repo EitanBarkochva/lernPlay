@@ -649,18 +649,24 @@ async function startGame() {
   currentAttempts = 0;
   quizMode = false;
 
-  // בחירת סוג המשחק (מריו / פאקמן) - אותן שאלות, מנוע שונה
+  // בחירת סוג המשחק - אותן שאלות, מנוע שונה
   const style = (document.getElementById("gameStyle") || {}).value || "mario";
-  activeEngine = (style === "pacman") ? PacmanGame : MarioGame;
+  const engines = { mario: MarioGame, pacman: PacmanGame, spaceship: SpaceshipGame, maze: MazeGame };
+  activeEngine = engines[style] || MarioGame;
+  const isMario = (style === "mario");
 
   // עוברים למסך המשחק ומציגים את פקדי המגע המתאימים
   showScreen("marioGameScreen");
   document.getElementById("gameTitleLabel").textContent = found.title + " — " + found.subject;
-  document.getElementById("marioControls").style.display = (style === "pacman") ? "none" : "flex";
-  document.getElementById("pacmanControls").style.display = (style === "pacman") ? "flex" : "none";
-  document.getElementById("controlsHint").textContent = (style === "pacman")
-    ? "מקלדת: חיצים לכל הכיוונים. אסוף נקודות, הגע ל-❓ כדי לענות, והיזהר מהרוחות!"
-    : "מקלדת: חיצים ימינה/שמאלה לתנועה, רווח לקפיצה. הגע לתיבת ה-❓ כדי לענות על שאלה!";
+  document.getElementById("marioControls").style.display = isMario ? "flex" : "none";
+  document.getElementById("pacmanControls").style.display = isMario ? "none" : "flex";
+  const hints = {
+    mario: "מקלדת: חיצים ימינה/שמאלה לתנועה, רווח לקפיצה. הגע לתיבת ה-❓ כדי לענות!",
+    pacman: "מקלדת: חיצים לכל הכיוונים. אסוף נקודות, הגע ל-❓ כדי לענות, והיזהר מהרוחות!",
+    spaceship: "מקלדת: חיצים לכל הכיוונים. אסוף כוכבים, טוס ל-❓ כדי לענות, והתחמק ממטאורים!",
+    maze: "מקלדת: חיצים לכל הכיוונים. ענה על כל ה-❓ כדי לפתוח את היציאה 🏁 והגע אליה!"
+  };
+  document.getElementById("controlsHint").textContent = hints[style] || hints.mario;
 
   const canvas = document.getElementById("gameCanvas");
   // התאמת גודל הקנבס (מריו משתמש בגודל הזה; פאקמן מגדיר גודל משלו)
