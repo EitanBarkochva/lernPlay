@@ -575,19 +575,41 @@ async function showBrowse() {
     .sort((a, b) => a[1] - b[1]);
   grades.forEach(([name]) => sel.add(new Option("כיתה " + name, name)));
 
+  // מילוי תיבת המקצועות: הכל + מקצועות רגילים + Bands
+  const subSel = document.getElementById("browseSubject");
+  subSel.innerHTML = "<option value=''>📋 הכל</option>";
+  const subjects = [...new Set(browseGames.filter(g => !isBandGame(g)).map(g => g.subject).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b, "he"));
+  subjects.forEach(s => subSel.add(new Option(s, "subject:" + s)));
+  const bands = [...new Set(browseGames.filter(g => isBandGame(g)).map(g => g.topic))].sort();
+  bands.forEach(b => subSel.add(new Option("📘 " + b, "band:" + b)));
+
   renderBrowse();
 }
 
-/* ----- ציור רשימת המשחקים, מקובצת לפי כיתה ----- */
+function isBandGame(g) { return (g.topic || "").startsWith("Band "); }
+
+/* ----- ציור רשימת המשחקים, מקובצת לפי קבוצה ----- */
 function renderBrowse() {
-  const filter = document.getElementById("browseGrade").value;
+  const gradeFilter = document.getElementById("browseGrade").value;
+  const subVal = document.getElementById("browseSubject").value;
   const term = document.getElementById("browseSearch").value.trim().toLowerCase();
   const container = document.getElementById("browseList");
 
   let games = browseGames.slice().sort((a, b) =>
-    (a.gradeOrder - b.gradeOrder) || a.topic.localeCompare(b.topic, "he"));
-  if (filter) games = games.filter(g => g.grade === filter);
-  // חיפוש חופשי לפי נושא / כותרת / קוד
+    (a.gradeOrder - b.gradeOrder) || (a.topic || "").localeCompare(b.topic || "", "he"));
+
+  if (gradeFilter) games = games.filter(g => g.grade === gradeFilter);
+
+  // סינון לפי מקצוע / Band
+  if (subVal.startsWith("band:")) {
+    const bn = subVal.slice(5);
+    games = games.filter(g => isBandGame(g) && g.topic === bn);
+  } else if (subVal.startsWith("subject:")) {
+    const sn = subVal.slice(8);
+    games = games.filter(g => g.subject === sn && !isBandGame(g));
+  }
+
   if (term) {
     games = games.filter(g =>
       (g.topic || "").toLowerCase().includes(term) ||
@@ -600,13 +622,15 @@ function renderBrowse() {
     return;
   }
 
-  let html = "";
-  let lastGrade = null;
+  // קיבוץ: לפי כיתה, ולמשחקים ללא כיתה (Bands) לפי הנושא
+  const groupOf = g => g.grade ? ("כיתה " + g.grade) : (g.topic || g.subject || "כללי");
+  let html = "", last = null;
   games.forEach(g => {
-    if (g.grade !== lastGrade) {
-      if (lastGrade !== null) html += "</div>";
-      html += `<h3 class="browse-grade">כיתה ${escapeHtml(g.grade)}</h3><div class="browse-grid">`;
-      lastGrade = g.grade;
+    const grp = groupOf(g);
+    if (grp !== last) {
+      if (last !== null) html += "</div>";
+      html += `<h3 class="browse-grade">${escapeHtml(grp)}</h3><div class="browse-grid">`;
+      last = grp;
     }
     html += `
       <button class="game-card" onclick="pickGame('${escapeAttr(g.code)}','${escapeAttr(g.grade)}')">
@@ -615,7 +639,7 @@ function renderBrowse() {
         <span class="game-card-play">▶ שחק</span>
       </button>`;
   });
-  if (lastGrade !== null) html += "</div>";
+  if (last !== null) html += "</div>";
   container.innerHTML = html;
 }
 

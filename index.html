@@ -295,12 +295,16 @@
   <div class="form-card">
     <div class="row">
       <div>
-        <label>חיפוש נושא</label>
-        <input type="text" id="browseSearch" placeholder="לדוגמה: כפל, חיבור, חילוק..." oninput="renderBrowse()" autocomplete="off">
+        <label>מקצוע</label>
+        <select id="browseSubject" onchange="renderBrowse()"></select>
       </div>
       <div>
         <label>סינון לפי כיתה</label>
         <select id="browseGrade" onchange="renderBrowse()"></select>
+      </div>
+      <div>
+        <label>חיפוש</label>
+        <input type="text" id="browseSearch" placeholder="כפל, חיבור..." oninput="renderBrowse()" autocomplete="off">
       </div>
     </div>
   </div>
