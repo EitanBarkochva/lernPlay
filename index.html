@@ -266,6 +266,7 @@
       <option value="pacman">🟡 פאקמן</option>
       <option value="spaceship">🚀 חללית</option>
       <option value="maze">🧩 מבוך</option>
+      <option value="bubbles">🎯 בועות (תותח)</option>
     </select>
     <button class="btn green big" onclick="startGame()">🚀 התחל משחק</button>
   </div>
@@ -282,7 +283,7 @@
   <!-- פקדי מגע - מריו (שמאל/ימין/קפיצה) -->
   <div class="touch-controls" id="marioControls">
     <button class="touch-btn" onpointerdown="touchPress('ArrowRight')" onpointerup="touchRelease('ArrowRight')" onpointerleave="touchRelease('ArrowRight')">▶</button>
-    <button class="touch-btn jump" onpointerdown="touchPress(' ')" onpointerup="touchRelease(' ')" onpointerleave="touchRelease(' ')">⬆ קפיצה</button>
+    <button class="touch-btn jump" id="jumpBtn" onpointerdown="touchPress(' ')" onpointerup="touchRelease(' ')" onpointerleave="touchRelease(' ')">⬆ קפיצה</button>
     <button class="touch-btn" onpointerdown="touchPress('ArrowLeft')" onpointerup="touchRelease('ArrowLeft')" onpointerleave="touchRelease('ArrowLeft')">◀</button>
   </div>
 
@@ -367,6 +368,7 @@
 <script src="pacman.js"></script>
 <script src="spaceship.js"></script>
 <script src="maze.js"></script>
+<script src="bubbles.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

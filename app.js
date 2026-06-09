@@ -651,20 +651,24 @@ async function startGame() {
 
   // בחירת סוג המשחק - אותן שאלות, מנוע שונה
   const style = (document.getElementById("gameStyle") || {}).value || "mario";
-  const engines = { mario: MarioGame, pacman: PacmanGame, spaceship: SpaceshipGame, maze: MazeGame };
+  const engines = { mario: MarioGame, pacman: PacmanGame, spaceship: SpaceshipGame, maze: MazeGame, bubbles: BubblesGame };
   activeEngine = engines[style] || MarioGame;
-  const isMario = (style === "mario");
+  // מריו ובועות משתמשים בפקדי שמאל/ימין/פעולה; השאר ב-D-pad
+  const useMarioControls = (style === "mario" || style === "bubbles");
 
   // עוברים למסך המשחק ומציגים את פקדי המגע המתאימים
   showScreen("marioGameScreen");
   document.getElementById("gameTitleLabel").textContent = found.title + " — " + found.subject;
-  document.getElementById("marioControls").style.display = isMario ? "flex" : "none";
-  document.getElementById("pacmanControls").style.display = isMario ? "none" : "flex";
+  document.getElementById("marioControls").style.display = useMarioControls ? "flex" : "none";
+  document.getElementById("pacmanControls").style.display = useMarioControls ? "none" : "flex";
+  const jb = document.getElementById("jumpBtn");
+  if (jb) jb.textContent = (style === "bubbles") ? "🚀 ירה" : "⬆ קפיצה";
   const hints = {
     mario: "מקלדת: חיצים ימינה/שמאלה לתנועה, רווח לקפיצה. הגע לתיבת ה-❓ כדי לענות!",
     pacman: "מקלדת: חיצים לכל הכיוונים. אסוף נקודות, הגע ל-❓ כדי לענות, והיזהר מהרוחות!",
     spaceship: "מקלדת: חיצים לכל הכיוונים. אסוף כוכבים, טוס ל-❓ כדי לענות, והתחמק ממטאורים!",
-    maze: "מקלדת: חיצים לכל הכיוונים. ענה על כל ה-❓ כדי לפתוח את היציאה 🏁 והגע אליה!"
+    maze: "מקלדת: חיצים לכל הכיוונים. ענה על כל ה-❓ כדי לפתוח את היציאה 🏁 והגע אליה!",
+    bubbles: "מקלדת: חיצים ימינה/שמאלה לכיוון התותח, רווח לירייה. פגע ב-❓ וענה נכון כדי לפוצץ בועות!"
   };
   document.getElementById("controlsHint").textContent = hints[style] || hints.mario;
 
