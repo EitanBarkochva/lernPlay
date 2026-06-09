@@ -838,6 +838,12 @@ function renderExams() {
 async function startExam(code) {
   const name = document.getElementById("examName").value.trim();
   if (!name) { alert("נא להזין שם לפני בחירת בחינה"); return; }
+  const minutes = parseInt(document.getElementById("examTime").value) || 0;
+  await startExamWith(code, name, minutes);
+}
+
+/* התחלת מבחן ישירות (משמש גם מתוך דוח התלמיד) */
+async function startExamWith(code, name, minutes) {
   let g;
   try { g = await getGameByCode(code); }
   catch (e) { console.error(e); alert("שגיאה בטעינת הבחינה"); return; }
@@ -846,12 +852,18 @@ async function startExam(code) {
   examGame = g; examName = name;
   examQuestions = shuffle(g.questions);   // ערבוב שאלות
   examIndex = 0; examAnswers = [];
-  const minutes = parseInt(document.getElementById("examTime").value) || 0;
   examTimed = minutes > 0; examTotalSec = minutes * 60; examTimeLeft = examTotalSec; examStart = Date.now();
 
   showScreen("examRunScreen");
   if (examTimed) startExamTimer(); else document.getElementById("examTimerBar").innerHTML = "<span class='timer-num'>⏱️ ללא הגבלת זמן</span>";
   renderExamQuestion();
+}
+
+/* מעבר ממסך הדוח ישר למבחן על אותו הנושא */
+function startExamFromReport() {
+  if (!activeGame || !activeGame.code) { showExams(); return; }
+  const name = (typeof student !== "undefined" && student && student.name) ? student.name : "תלמיד";
+  startExamWith(activeGame.code, name, 0);
 }
 
 function startExamTimer() {
@@ -969,6 +981,7 @@ function showExamResult(correct, total, pct, timedOut) {
   mountEmailPanel("examEmail", examGame.creatorEmail || "");
 
   showScreen("examResultScreen");
+  if (pass) setTimeout(() => launchConfetti(pct >= 90 ? 3200 : 2400), 250);   // 🎉 חגיגה בהצלחה
 }
 
 function buildExamEmailBody(correct, total, pct) {
@@ -1214,7 +1227,23 @@ async function saveAndShowReport(silverCoins, lastLevel, completed) {
 function showStudentReport(result, correctCount, wrongCount) {
   const game = activeGame;
   const summary = document.getElementById("studentReportSummary");
-  summary.innerHTML = `
+
+  // באנר חגיגי לפי הביצועים
+  const total = result.answers.length;
+  const pct = total ? Math.round(correctCount / total * 100) : 0;
+  let emoji, title;
+  if (pct >= 90)      { emoji = "🏆"; title = "מדהים! כל הכבוד!"; }
+  else if (pct >= 70) { emoji = "🎉"; title = "כל הכבוד!"; }
+  else if (pct >= 50) { emoji = "😀"; title = "יפה מאוד!"; }
+  else                { emoji = "💪"; title = "כל הכבוד שסיימת!"; }
+  const banner = `
+    <div class="celebrate-banner">
+      <div class="celebrate-emoji">${emoji}</div>
+      <div class="celebrate-title">${title}</div>
+      <div class="celebrate-sub">ענית נכון על ${correctCount} מתוך ${total} · אספת ${result.totalCoins} מטבעות 💰</div>
+    </div>`;
+
+  summary.innerHTML = banner + `
     <div class="report-cards">
       <div class="report-card">👦 ${escapeHtml(result.studentName)}</div>
       <div class="report-card">📚 ${escapeHtml(game.subject)}</div>
@@ -1257,6 +1286,7 @@ function showStudentReport(result, correctCount, wrongCount) {
   mountEmailPanel("reportEmail", game.creatorEmail || "");
 
   showScreen("studentReportScreen");
+  setTimeout(() => launchConfetti(), 250);   // 🎉 חגיגה!
 }
 
 function buildStudentEmailBody(game, result, correctCount, wrongCount) {
@@ -1510,6 +1540,58 @@ function quitGame() {
 // השוואת תשובות בלי רגישות לרווחים/אותיות
 function normalize(s) {
   return (s || "").toString().trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+/* ============================================================
+   🎉 אנימציית קונפטי חגיגית (קנבס, ללא ספריות)
+   ============================================================ */
+function launchConfetti(duration) {
+  // כיבוד העדפת תנועה מופחתת
+  try { if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return; } catch (e) {}
+  duration = duration || 2800;
+  const canvas = document.createElement("canvas");
+  canvas.style.cssText = "position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:9999";
+  document.body.appendChild(canvas);
+  const ctx = canvas.getContext("2d");
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  function resize() { canvas.width = innerWidth * dpr; canvas.height = innerHeight * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0); }
+  resize();
+  window.addEventListener("resize", resize);
+
+  const colors = ["#e74c3c", "#f1c40f", "#2ecc71", "#3498db", "#9b59b6", "#e67e22", "#1abc9c", "#fd79a8"];
+  const W = () => innerWidth, H = () => innerHeight;
+  const N = 150, parts = [];
+  for (let i = 0; i < N; i++) {
+    parts.push({
+      x: Math.random() * W(),
+      y: -20 - Math.random() * H() * 0.6,
+      r: 6 + Math.random() * 9,
+      c: colors[(Math.random() * colors.length) | 0],
+      vx: (Math.random() - 0.5) * 2,
+      vy: 2.2 + Math.random() * 3.8,
+      rot: Math.random() * Math.PI * 2,
+      vr: (Math.random() - 0.5) * 0.35,
+      shape: Math.random() < 0.5 ? "rect" : "circle"
+    });
+  }
+  const start = performance.now();
+  function frame(t) {
+    const elapsed = t - start;
+    ctx.clearRect(0, 0, W(), H());
+    parts.forEach(p => {
+      p.x += p.vx; p.y += p.vy; p.vy += 0.025; p.rot += p.vr;
+      ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.fillStyle = p.c;
+      if (p.shape === "rect") ctx.fillRect(-p.r / 2, -p.r / 2, p.r, p.r * 0.6);
+      else { ctx.beginPath(); ctx.arc(0, 0, p.r / 2, 0, Math.PI * 2); ctx.fill(); }
+      ctx.restore();
+    });
+    if (elapsed < duration) requestAnimationFrame(frame);
+    else {
+      canvas.style.transition = "opacity .6s"; canvas.style.opacity = "0";
+      setTimeout(() => { window.removeEventListener("resize", resize); canvas.remove(); }, 650);
+    }
+  }
+  requestAnimationFrame(frame);
 }
 
 // ערבוב מערך (Fisher-Yates)

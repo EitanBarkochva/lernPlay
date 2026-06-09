@@ -348,6 +348,25 @@ h3 { margin: 12px 0; color: #243746; }
   .big-btn { padding: 22px 12px; }
 }
 
+/* ----- באנר חגיגה בדוח ----- */
+.celebrate-banner {
+  text-align: center; margin: 4px 0 18px; padding: 22px 18px; border-radius: 22px; color: #fff;
+  background: linear-gradient(135deg, #ff9a3c, #ff5e8a 45%, #9b6cff 100%);
+  background-size: 160% 160%; animation: bgShift 8s ease infinite, bannerIn .5s cubic-bezier(.2,1.3,.5,1) both;
+  box-shadow: 0 12px 30px rgba(155,108,255,.32);
+}
+@keyframes bannerIn { from { opacity: 0; transform: translateY(-14px) scale(.92); } to { opacity: 1; transform: none; } }
+.celebrate-emoji {
+  font-size: 4rem; line-height: 1; filter: drop-shadow(0 4px 6px rgba(0,0,0,.2));
+  animation: emojiBounce 1.1s ease infinite;
+}
+@keyframes emojiBounce { 0%,100% { transform: translateY(0) rotate(-4deg); } 50% { transform: translateY(-12px) rotate(4deg); } }
+.celebrate-title {
+  font-family: "Secular One", "Heebo", sans-serif; font-size: 1.9rem; margin-top: 8px;
+  text-shadow: 1px 2px 0 rgba(0,0,0,.18);
+}
+.celebrate-sub { font-size: 1.05rem; font-weight: 600; margin-top: 6px; opacity: .95; }
+
 /* כיבוד העדפת תנועה מופחתת */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .001s !important; animation-iteration-count: 1 !important; transition-duration: .001s !important; }
