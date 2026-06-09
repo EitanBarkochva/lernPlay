@@ -17,6 +17,7 @@
   <div class="home-buttons">
     <button class="big-btn green"  onclick="showScreen('createGameScreen')">➕ יצירת משחק חדש<br><small>למורה / הורה</small></button>
     <button class="big-btn teal"   onclick="showBrowse()">📚 בחר משחק מוכן<br><small>לפי כיתה ונושא</small></button>
+    <button class="big-btn indigo" onclick="showBands()">📘 אנגלית - Bands<br><small>אוצר מילים I / II / III</small></button>
     <button class="big-btn blue"   onclick="showScreen('studentLoginScreen')">🕹️ כניסה עם קוד<br><small>לתלמיד</small></button>
     <button class="big-btn purple" onclick="showScreen('quizOnlyScreen')">📝 שאלות בלי משחק</button>
     <button class="big-btn red-btn" onclick="showScreen('duelHomeScreen')">⚔️ תחרות 1 על 1<br><small>אונליין מול חבר</small></button>
@@ -228,6 +229,14 @@
     <select id="lbGrade" onchange="renderLeaderboard()"></select>
   </div>
   <div id="leaderboardList" class="table-wrap"></div>
+</div>
+
+<!-- ============ אנגלית - Bands ============ -->
+<div id="bandsScreen" class="screen">
+  <button class="back-btn" onclick="showScreen('homeScreen')">⬅ חזרה</button>
+  <h2>📘 אנגלית - אוצר מילים לפי Bands</h2>
+  <p class="muted" style="text-align:center">המילים הרשמיות, מחולקות למשחקים של 30 מילים. בחר חלק, ואז סוג משחק.</p>
+  <div id="bandsList"></div>
 </div>
 
 <!-- ============ בחירת משחק מוכן ============ -->

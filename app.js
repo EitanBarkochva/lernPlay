@@ -628,6 +628,39 @@ function pickGame(code, grade) {
 }
 
 /* ============================================================
+   אנגלית - Bands (אוצר מילים רשמי)
+   ============================================================ */
+async function showBands() {
+  showScreen("bandsScreen");
+  const c = document.getElementById("bandsList");
+  c.innerHTML = "<p class='muted'>טוען...</p>";
+  let groups;
+  try { groups = await getBandGames(); }
+  catch (e) { console.error(e); c.innerHTML = "<p class='muted'>שגיאה בטעינה.</p>"; return; }
+
+  const order = ["Band I", "Band II", "Band III"];
+  const oi = b => { const i = order.indexOf(b); return i < 0 ? 99 : i; };
+  const keys = Object.keys(groups).sort((a, b) => oi(a) - oi(b) || a.localeCompare(b));
+  if (!keys.length) { c.innerHTML = "<p class='muted'>עדיין אין משחקי Bands.</p>"; return; }
+
+  let html = "";
+  keys.forEach(band => {
+    const list = groups[band].slice().sort((a, b) => a.code.localeCompare(b.code));
+    html += `<h3 class="browse-grade">📘 ${escapeHtml(band)} <small>(${list.length} חלקים)</small></h3><div class="browse-grid">`;
+    list.forEach((g, i) => {
+      html += `
+        <button class="game-card" onclick="pickGame('${escapeAttr(g.code)}','')">
+          <span class="game-card-topic">חלק ${i + 1}</span>
+          <span class="game-card-sub">${escapeHtml(g.code)} · 30 מילים</span>
+          <span class="game-card-play">▶ שחק</span>
+        </button>`;
+    });
+    html += "</div>";
+  });
+  c.innerHTML = html;
+}
+
+/* ============================================================
    4. כניסת תלמיד
    ============================================================ */
 async function startGame() {

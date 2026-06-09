@@ -485,6 +485,25 @@ async function getLeaderboard(gradeFilter) {
 }
 
 /* ------------------------------------------------------------
+   getBandGames() - משחקי אוצר המילים לפי Bands (אנגלית).
+   מחזיר אובייקט { "Band I": [{code,title}], "Band II": [...], ... }
+   ------------------------------------------------------------ */
+async function getBandGames() {
+  if (!USE_SUPABASE) return {};
+  const tops = await sbSelect("topics?name=ilike.Band*&select=id,name");
+  if (!tops.length) return {};
+  const byId = {}; tops.forEach(t => byId[t.id] = t.name);
+  const ids = tops.map(t => t.id).join(",");
+  const games = await sbSelect("learning_games?topic_id=in.(" + ids + ")&is_active=eq.true&select=game_code,title,topic_id&order=game_code.asc");
+  const grouped = {};
+  games.forEach(g => {
+    const band = byId[g.topic_id] || "Band";
+    (grouped[band] = grouped[band] || []).push({ code: g.game_code, title: g.title });
+  });
+  return grouped;
+}
+
+/* ------------------------------------------------------------
    generateQuestionsAI(params) - יצירת שאלות אוטומטית ב-AI
    דרך ה-Edge Function ב-Supabase (שמקושר ל-Claude API).
    params = { subject, grade, topic, count, difficulty }
