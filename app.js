@@ -661,6 +661,188 @@ async function showBands() {
 }
 
 /* ============================================================
+   מבחנים (מצב בחינה עם טיימר וציון)
+   ============================================================ */
+let examGames = [];
+let examGame = null, examName = "", examQuestions = [], examIndex = 0, examAnswers = [];
+let examTimer = null, examTimeLeft = 0, examTimed = false, examTotalSec = 0, examStart = 0;
+
+function clearExamTimer() { if (examTimer) { clearInterval(examTimer); examTimer = null; } }
+
+async function showExams() {
+  showScreen("examsScreen");
+  const c = document.getElementById("examsList");
+  c.innerHTML = "<p class='muted'>טוען בחינות...</p>";
+  try { examGames = await listGames(); }
+  catch (e) { console.error(e); c.innerHTML = "<p class='muted'>שגיאה בטעינה.</p>"; return; }
+
+  const sel = document.getElementById("examGrade");
+  sel.innerHTML = "<option value=''>כל הכיתות</option>";
+  [...new Map(examGames.map(g => [g.grade, g.gradeOrder])).entries()]
+    .filter(([n]) => n).sort((a, b) => a[1] - b[1])
+    .forEach(([n]) => sel.add(new Option("כיתה " + n, n)));
+  renderExams();
+}
+
+function renderExams() {
+  const filter = document.getElementById("examGrade").value;
+  const term = document.getElementById("examSearch").value.trim().toLowerCase();
+  let games = examGames.slice().sort((a, b) => (a.gradeOrder - b.gradeOrder) || (a.topic || "").localeCompare(b.topic || "", "he"));
+  if (filter) games = games.filter(g => g.grade === filter);
+  if (term) games = games.filter(g => ((g.topic || "") + " " + (g.title || "") + " " + (g.subject || "") + " " + g.code).toLowerCase().includes(term));
+
+  const c = document.getElementById("examsList");
+  if (!games.length) { c.innerHTML = "<p class='muted'>לא נמצאו בחינות תואמות.</p>"; return; }
+  let html = "", last = null;
+  games.forEach(g => {
+    const grp = g.grade ? ("כיתה " + g.grade) : (g.subject || "כללי");
+    if (grp !== last) { if (last !== null) html += "</div>"; html += `<h3 class="browse-grade">${escapeHtml(grp)}</h3><div class="browse-grid">`; last = grp; }
+    html += `
+      <button class="game-card" onclick="startExam('${escapeAttr(g.code)}')">
+        <span class="game-card-topic">${escapeHtml(g.topic || g.title)}</span>
+        <span class="game-card-sub">${escapeHtml(g.subject)} · ${escapeHtml(g.code)}</span>
+        <span class="game-card-play">📝 התחל מבחן</span>
+      </button>`;
+  });
+  if (last !== null) html += "</div>";
+  c.innerHTML = html;
+}
+
+async function startExam(code) {
+  const name = document.getElementById("examName").value.trim();
+  if (!name) { alert("נא להזין שם לפני בחירת בחינה"); return; }
+  let g;
+  try { g = await getGameByCode(code); }
+  catch (e) { console.error(e); alert("שגיאה בטעינת הבחינה"); return; }
+  if (!g || !g.questions.length) { alert("הבחינה לא נמצאה"); return; }
+
+  examGame = g; examName = name;
+  examQuestions = shuffle(g.questions);   // ערבוב שאלות
+  examIndex = 0; examAnswers = [];
+  const minutes = parseInt(document.getElementById("examTime").value) || 0;
+  examTimed = minutes > 0; examTotalSec = minutes * 60; examTimeLeft = examTotalSec; examStart = Date.now();
+
+  showScreen("examRunScreen");
+  if (examTimed) startExamTimer(); else document.getElementById("examTimerBar").innerHTML = "<span class='timer-num'>⏱️ ללא הגבלת זמן</span>";
+  renderExamQuestion();
+}
+
+function startExamTimer() {
+  clearExamTimer();
+  updateExamTimer();
+  examTimer = setInterval(() => {
+    examTimeLeft--;
+    updateExamTimer();
+    if (examTimeLeft <= 0) { clearExamTimer(); finishExam(true); }
+  }, 1000);
+}
+function updateExamTimer() {
+  const el = document.getElementById("examTimerBar");
+  if (!el) return;
+  const m = Math.floor(examTimeLeft / 60), s = examTimeLeft % 60;
+  const pct = examTotalSec ? Math.max(0, examTimeLeft / examTotalSec * 100) : 0;
+  const color = examTimeLeft > 60 ? "#27ae60" : examTimeLeft > 20 ? "#f39c12" : "#e74c3c";
+  el.innerHTML = `<div class="timer-bar"><div class="timer-fill" style="width:${pct}%;background:${color}"></div></div>
+    <span class="timer-num">⏱️ ${m}:${String(s).padStart(2, "0")}</span>`;
+}
+
+function renderExamQuestion() {
+  const n = examQuestions.length;
+  if (examIndex >= n) { finishExam(false); return; }
+  document.getElementById("examProgress").textContent = "שאלה " + (examIndex + 1) + " מתוך " + n;
+  const q = examQuestions[examIndex];
+  let answerHtml;
+  if (q.type === "open") {
+    answerHtml = `<input type="text" id="examInput" class="answer-input" placeholder="כתוב תשובה" autocomplete="off">
+      <button class="btn" onclick="examOpenSubmit()">הבא ➡</button>`;
+  } else if (q.type === "truefalse") {
+    answerHtml = `<button class="btn answer-option" onclick="examAnswer('נכון')">נכון</button>
+      <button class="btn answer-option" onclick="examAnswer('לא נכון')">לא נכון</button>`;
+  } else {
+    answerHtml = shuffle([q.correctAnswer, ...q.wrongAnswers]).map(o =>
+      `<button class="btn answer-option" onclick="examAnswer('${escapeAttr(o)}')">${escapeHtml(o)}</button>`).join("");
+  }
+  document.getElementById("examQuestionBox").innerHTML =
+    `<h2 class="question-text">${escapeHtml(q.text)}</h2><div class="answer-area">${answerHtml}</div>`;
+  if (q.type === "open") setTimeout(() => document.getElementById("examInput")?.focus(), 100);
+}
+
+function examOpenSubmit() {
+  const v = document.getElementById("examInput").value.trim();
+  if (!v) { alert("נא לכתוב תשובה"); return; }
+  examAnswer(v);
+}
+
+/* ----- מבחן: רישום תשובה והמשך (בלי משוב תוך כדי) ----- */
+function examAnswer(val) {
+  const q = examQuestions[examIndex];
+  const correct = normalize(val) === normalize(q.correctAnswer);
+  examAnswers.push({
+    questionId: q.id, questionText: q.text, studentAnswer: val,
+    correctAnswer: q.correctAnswer, isCorrect: correct, attempts: 1, coinsEarned: correct ? 10 : 0
+  });
+  examIndex++;
+  renderExamQuestion();
+}
+
+async function finishExam(timedOut) {
+  clearExamTimer();
+  const total = examQuestions.length;
+  const correct = examAnswers.filter(a => a.isCorrect).length;
+  const pct = total ? Math.round(correct / total * 100) : 0;
+
+  const result = {
+    id: "result_" + Date.now(), gameCode: examGame.code, studentName: examName,
+    studentGrade: examGame.grade || "", gameType: "exam", playMode: "exam",
+    finishedAt: new Date().toLocaleString("he-IL"), silverCoins: 0,
+    goldCoins: correct * 10, totalCoins: correct * 10, currentLevel: 0,
+    completed: !timedOut, answers: examAnswers.slice()
+  };
+  try { await saveStudentResult(result); } catch (e) { console.error(e); }
+  showExamResult(correct, total, pct, timedOut);
+}
+
+function showExamResult(correct, total, pct, timedOut) {
+  const pass = pct >= 60;
+  const label = pct >= 90 ? "מצוין! 🏆" : pct >= 75 ? "כל הכבוד! 😀" : pass ? "עברת ✓" : "כדאי לתרגל עוד 💪";
+  const elapsed = Math.round((Date.now() - examStart) / 1000);
+  const mm = Math.floor(elapsed / 60), ss = elapsed % 60;
+
+  const rows = examAnswers.map((a, i) => `
+    <tr class="${a.isCorrect ? 'row-ok' : 'row-bad'}">
+      <td>${i + 1}</td><td>${escapeHtml(a.questionText)}</td>
+      <td>${escapeHtml(a.studentAnswer)}</td><td>${escapeHtml(a.correctAnswer)}</td>
+      <td>${a.isCorrect ? "✅" : "❌"}</td>
+    </tr>`).join("");
+
+  document.getElementById("examResultBox").innerHTML = `
+    <h2 style="text-align:center">📝 תוצאת המבחן</h2>
+    ${timedOut ? "<p style='text-align:center;color:#e74c3c;font-weight:bold'>⏰ הזמן נגמר!</p>" : ""}
+    <div class="exam-grade ${pass ? 'pass' : 'fail'}">${pct}%</div>
+    <p style="text-align:center;font-weight:bold;font-size:1.3rem">${label}</p>
+    <div class="report-cards">
+      <div class="report-card">👦 ${escapeHtml(examName)}</div>
+      <div class="report-card good">✅ נכון: ${correct}</div>
+      <div class="report-card bad">❌ שגוי/דילוג: ${total - correct}</div>
+      <div class="report-card">❓ ${total} שאלות</div>
+      <div class="report-card">⏱️ זמן: ${mm}:${String(ss).padStart(2, "0")}</div>
+    </div>
+    <div class="table-wrap">
+      <table class="report-table">
+        <thead><tr><th>#</th><th>השאלה</th><th>תשובתך</th><th>נכונה</th><th>תוצאה</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+  showScreen("examResultScreen");
+}
+
+function quitExam() {
+  clearExamTimer();
+  examGame = null; examQuestions = []; examIndex = 0; examAnswers = [];
+  showScreen("homeScreen");
+}
+
+/* ============================================================
    4. כניסת תלמיד
    ============================================================ */
 async function startGame() {

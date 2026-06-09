@@ -50,6 +50,13 @@ h3 { margin: 12px 0; color: #2c3e50; }
 .big-btn.pink   { background: #e84393; }
 .big-btn.teal   { background: #16a085; }
 .big-btn.indigo { background: #4a4fc0; }
+.big-btn.dark   { background: #34495e; }
+
+/* מבחנים */
+.exam-timer { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+.exam-grade { font-size: 3.4rem; font-weight: bold; text-align: center; margin: 8px 0; }
+.exam-grade.pass { color: #27ae60; }
+.exam-grade.fail { color: #e74c3c; }
 .big-btn.gold-btn { background: #f1c40f; color: #5a4500; }
 .big-btn.red-btn { background: #c0392b; }
 

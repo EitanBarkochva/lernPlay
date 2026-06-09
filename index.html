@@ -18,6 +18,7 @@
     <button class="big-btn green"  onclick="showScreen('createGameScreen')">➕ יצירת משחק חדש<br><small>למורה / הורה</small></button>
     <button class="big-btn teal"   onclick="showBrowse()">📚 בחר משחק מוכן<br><small>לפי כיתה ונושא</small></button>
     <button class="big-btn indigo" onclick="showBands()">📘 אנגלית - Bands<br><small>אוצר מילים I / II / III</small></button>
+    <button class="big-btn dark"   onclick="showExams()">📝 מבחנים<br><small>בחר בחינה + טיימר</small></button>
     <button class="big-btn blue"   onclick="showScreen('studentLoginScreen')">🕹️ כניסה עם קוד<br><small>לתלמיד</small></button>
     <button class="big-btn purple" onclick="showScreen('quizOnlyScreen')">📝 שאלות בלי משחק</button>
     <button class="big-btn red-btn" onclick="showScreen('duelHomeScreen')">⚔️ תחרות 1 על 1<br><small>אונליין מול חבר</small></button>
@@ -229,6 +230,53 @@
     <select id="lbGrade" onchange="renderLeaderboard()"></select>
   </div>
   <div id="leaderboardList" class="table-wrap"></div>
+</div>
+
+<!-- ============ מבחנים ============ -->
+<div id="examsScreen" class="screen">
+  <button class="back-btn" onclick="showScreen('homeScreen')">⬅ חזרה</button>
+  <h2>📝 מבחנים</h2>
+  <div class="form-card">
+    <label>השם שלך</label>
+    <input type="text" id="examName" placeholder="השם שלך">
+    <div class="row">
+      <div>
+        <label>⏱️ זמן למבחן</label>
+        <select id="examTime">
+          <option value="0">ללא הגבלת זמן</option>
+          <option value="5">5 דקות</option>
+          <option value="10">10 דקות</option>
+          <option value="15">15 דקות</option>
+          <option value="20">20 דקות</option>
+        </select>
+      </div>
+      <div>
+        <label>חיפוש בחינה</label>
+        <input type="text" id="examSearch" placeholder="נושא / מקצוע / קוד" oninput="renderExams()" autocomplete="off">
+      </div>
+      <div>
+        <label>סינון כיתה</label>
+        <select id="examGrade" onchange="renderExams()"></select>
+      </div>
+    </div>
+    <p class="muted">בחר בחינה מהרשימה למטה כדי להתחיל.</p>
+  </div>
+  <div id="examsList"></div>
+</div>
+
+<div id="examRunScreen" class="screen">
+  <button class="back-btn" onclick="quitExam()">⬅ יציאה</button>
+  <div id="examTimerBar" class="exam-timer"></div>
+  <p id="examProgress" class="quiz-progress"></p>
+  <div id="examQuestionBox" class="form-card"></div>
+</div>
+
+<div id="examResultScreen" class="screen">
+  <div id="examResultBox"></div>
+  <div class="report-actions">
+    <button class="btn green" onclick="showExams()">📝 מבחן נוסף</button>
+    <button class="btn blue" onclick="showScreen('homeScreen')">🏠 לדף הבית</button>
+  </div>
 </div>
 
 <!-- ============ אנגלית - Bands ============ -->
