@@ -51,6 +51,11 @@ h3 { margin: 12px 0; color: #2c3e50; }
 .big-btn.teal   { background: #16a085; }
 .big-btn.indigo { background: #4a4fc0; }
 .big-btn.dark   { background: #34495e; }
+.big-btn.teal2  { background: #00a3a3; }
+
+/* תוכניות עולה */
+.program-card { background: linear-gradient(135deg,#e8f7f5,#f3fbfa); border-color:#8fd9d0; }
+.program-card .game-card-play { color:#00a3a3; }
 
 /* מבחנים */
 .exam-timer { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }

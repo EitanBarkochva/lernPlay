@@ -652,6 +652,76 @@ function pickGame(code, grade) {
 }
 
 /* ============================================================
+   תוכניות "עולה לכיתה X" — חזרה לקראת השנה הבאה
+   כל תוכנית מרכזת את משחקי הכיתה שצריך לתרגל כדי להיות מוכן.
+   ============================================================ */
+const PROGRAMS = [
+  { target: "א", practice: "א", desc: "הכנה לכיתה א — משחקי יסוד" },
+  { target: "ב", practice: "א", desc: "חזרה על חומר כיתה א" },
+  { target: "ג", practice: "ב", desc: "חזרה על חומר כיתה ב" },
+  { target: "ד", practice: "ג", desc: "חזרה על חומר כיתה ג" },
+  { target: "ה", practice: "ד", desc: "חזרה על חומר כיתה ד" },
+  { target: "ו", practice: "ה", desc: "חזרה על חומר כיתה ה" },
+  { target: "ז", practice: "ו", desc: "חזרה על חומר כיתה ו" },
+];
+let programGamesCache = [];
+
+async function showPrograms() {
+  showScreen("programsScreen");
+  const c = document.getElementById("programsList");
+  c.innerHTML = "<p class='muted'>טוען...</p>";
+  try { programGamesCache = await listGames(); }
+  catch (e) { console.error(e); c.innerHTML = "<p class='muted'>שגיאה בטעינה.</p>"; return; }
+
+  c.innerHTML = '<div class="browse-grid">' + PROGRAMS.map(p => {
+    const count = programGamesCache.filter(g => g.grade === p.practice).length;
+    return `
+      <button class="game-card program-card" onclick="showProgram('${escapeAttr(p.target)}')">
+        <span class="game-card-topic">🎓 עולה לכיתה ${escapeHtml(p.target)}</span>
+        <span class="game-card-sub">${escapeHtml(p.desc)}</span>
+        <span class="game-card-play">${count} משחקים ▶</span>
+      </button>`;
+  }).join("") + "</div>";
+}
+
+function showProgram(target) {
+  const p = PROGRAMS.find(x => x.target === target);
+  if (!p) return;
+  showScreen("programGamesScreen");
+  document.getElementById("programTitle").textContent = "🎓 עולה לכיתה " + target;
+  document.getElementById("programSubtitle").textContent = p.desc + " — שחקו בכל המשחקים כדי להיות מוכנים! 💪";
+
+  const games = programGamesCache
+    .filter(g => g.grade === p.practice)
+    .sort((a, b) =>
+      (a.subject || "").localeCompare(b.subject || "", "he") ||
+      (a.topic || "").localeCompare(b.topic || "", "he"));
+
+  const c = document.getElementById("programGamesList");
+  if (!games.length) {
+    c.innerHTML = "<p class='muted'>אין עדיין משחקים זמינים לתוכנית זו.</p>";
+    return;
+  }
+
+  let html = "", last = null;
+  games.forEach(g => {
+    if (g.subject !== last) {
+      if (last !== null) html += "</div>";
+      html += `<h3 class="browse-grade">${escapeHtml(g.subject || "כללי")}</h3><div class="browse-grid">`;
+      last = g.subject;
+    }
+    html += `
+      <button class="game-card" onclick="pickGame('${escapeAttr(g.code)}','${escapeAttr(g.grade)}')">
+        <span class="game-card-topic">${escapeHtml(g.topic || g.title)}</span>
+        <span class="game-card-sub">${escapeHtml(g.subject)} · ${escapeHtml(g.code)}</span>
+        <span class="game-card-play">▶ שחק</span>
+      </button>`;
+  });
+  if (last !== null) html += "</div>";
+  c.innerHTML = html;
+}
+
+/* ============================================================
    אנגלית - Bands (אוצר מילים רשמי)
    ============================================================ */
 async function showBands() {
