@@ -240,6 +240,21 @@ h3 { margin: 12px 0; color: #2c3e50; }
 .browse-grid {
   display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px;
 }
+
+/* אקורדיאון בחירת משחק */
+.acc-item { border: 2px solid #d0f0e8; border-radius: 14px; margin: 10px 0; overflow: hidden; background: #fff; }
+.acc-head {
+  width: 100%; display: flex; align-items: center; justify-content: space-between;
+  background: linear-gradient(135deg,#eafaf6,#f4fbf9); border: none; cursor: pointer;
+  padding: 14px 16px; font-size: 19px; font-weight: 800; color: #138a72; text-align: right;
+}
+.acc-head:hover { background: linear-gradient(135deg,#dff5ef,#eafaf6); }
+.acc-title { display: flex; align-items: center; gap: 8px; }
+.acc-meta { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; color: #6b8f88; }
+.acc-arrow { transition: transform .2s; display: inline-block; font-size: 18px; }
+.acc-item.open .acc-arrow { transform: rotate(180deg); }
+.acc-panel { display: none; padding: 14px 16px; }
+.acc-item.open .acc-panel { display: block; }
 .game-card {
   display: flex; flex-direction: column; gap: 4px; text-align: right;
   background: #fff; border: 2px solid #e0e0e0; border-radius: 14px; padding: 14px;

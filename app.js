@@ -589,15 +589,24 @@ async function showBrowse() {
 
 function isBandGame(g) { return (g.topic || "").startsWith("Band "); }
 
-/* ----- ציור רשימת המשחקים, מקובצת לפי קבוצה ----- */
+const BAND_ORDER = ["Band I", "Band II", "Band III"];
+let browseOpen = null; // קבוצת המפתחות הפתוחים באקורדיאון
+
+function toggleBrowseGroup(key) {
+  if (!browseOpen) browseOpen = new Set();
+  if (browseOpen.has(key)) browseOpen.delete(key);
+  else browseOpen.add(key);
+  renderBrowse();
+}
+
+/* ----- ציור רשימת המשחקים כאקורדיאון: כיתה א..ו ואז Bands ----- */
 function renderBrowse() {
   const gradeFilter = document.getElementById("browseGrade").value;
   const subVal = document.getElementById("browseSubject").value;
   const term = document.getElementById("browseSearch").value.trim().toLowerCase();
   const container = document.getElementById("browseList");
 
-  let games = browseGames.slice().sort((a, b) =>
-    (a.gradeOrder - b.gradeOrder) || (a.topic || "").localeCompare(b.topic || "", "he"));
+  let games = browseGames.slice();
 
   if (gradeFilter) games = games.filter(g => g.grade === gradeFilter);
 
@@ -622,24 +631,48 @@ function renderBrowse() {
     return;
   }
 
-  // קיבוץ: לפי כיתה, ולמשחקים ללא כיתה (Bands) לפי הנושא
-  const groupOf = g => g.grade ? ("כיתה " + g.grade) : (g.topic || g.subject || "כללי");
-  let html = "", last = null;
+  // בניית קבוצות מסודרות: כיתות לפי gradeOrder, ואז Bands בסוף
+  const groups = [], idx = {};
   games.forEach(g => {
-    const grp = groupOf(g);
-    if (grp !== last) {
-      if (last !== null) html += "</div>";
-      html += `<h3 class="browse-grade">${escapeHtml(grp)}</h3><div class="browse-grid">`;
-      last = grp;
-    }
-    html += `
-      <button class="game-card" onclick="pickGame('${escapeAttr(g.code)}','${escapeAttr(g.grade)}')">
-        <span class="game-card-topic">${escapeHtml(g.topic || g.title)}</span>
-        <span class="game-card-sub">${escapeHtml(g.subject)} · ${escapeHtml(g.code)}</span>
-        <span class="game-card-play">▶ שחק</span>
-      </button>`;
+    const isB = isBandGame(g);
+    const key   = isB ? ("band:" + g.topic) : ("grade:" + g.grade);
+    const label = isB ? ("📘 " + g.topic) : ("כיתה " + g.grade);
+    const bi = isB ? BAND_ORDER.indexOf(g.topic) : -1;
+    const rank = isB ? (1000 + (bi < 0 ? 99 : bi)) : (g.gradeOrder || 0);
+    if (idx[key] === undefined) { idx[key] = groups.length; groups.push({ key, label, rank, games: [] }); }
+    groups[idx[key]].games.push(g);
   });
-  if (last !== null) html += "</div>";
+  groups.sort((a, b) => a.rank - b.rank);
+  groups.forEach(gr => gr.games.sort((a, b) => (a.topic || a.title || "").localeCompare(b.topic || b.title || "", "he")));
+
+  // אתחול מצב פתיחה: כברירת מחדל הקבוצה הראשונה (כיתה א) פתוחה
+  if (browseOpen === null) browseOpen = new Set(groups.length ? [groups[0].key] : []);
+  // בחיפוש — פותחים את כל הקבוצות התואמות כדי לראות תוצאות
+  const forceAll = !!term;
+  // אם כלום לא פתוח מבין הקבוצות הנוכחיות, פותחים את הראשונה
+  if (!forceAll && !groups.some(gr => browseOpen.has(gr.key)) && groups.length) browseOpen.add(groups[0].key);
+
+  let html = "";
+  groups.forEach(gr => {
+    const open = forceAll || browseOpen.has(gr.key);
+    let cards = "";
+    gr.games.forEach(g => {
+      cards += `
+        <button class="game-card" onclick="pickGame('${escapeAttr(g.code)}','${escapeAttr(g.grade)}')">
+          <span class="game-card-topic">${escapeHtml(g.topic || g.title)}</span>
+          <span class="game-card-sub">${escapeHtml(g.subject)} · ${escapeHtml(g.code)}</span>
+          <span class="game-card-play">▶ שחק</span>
+        </button>`;
+    });
+    html += `
+      <div class="acc-item ${open ? "open" : ""}">
+        <button type="button" class="acc-head" onclick="toggleBrowseGroup('${escapeAttr(gr.key)}')">
+          <span class="acc-title">${escapeHtml(gr.label)}</span>
+          <span class="acc-meta">${gr.games.length} משחקים <span class="acc-arrow">▾</span></span>
+        </button>
+        <div class="acc-panel"><div class="browse-grid">${cards}</div></div>
+      </div>`;
+  });
   container.innerHTML = html;
 }
 
