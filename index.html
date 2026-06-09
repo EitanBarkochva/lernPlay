@@ -19,6 +19,7 @@
     <button class="big-btn teal"   onclick="showBrowse()">📚 בחר משחק מוכן<br><small>לפי כיתה ונושא</small></button>
     <button class="big-btn blue"   onclick="showScreen('studentLoginScreen')">🕹️ כניסה עם קוד<br><small>לתלמיד</small></button>
     <button class="big-btn purple" onclick="showScreen('quizOnlyScreen')">📝 שאלות בלי משחק</button>
+    <button class="big-btn red-btn" onclick="showScreen('duelHomeScreen')">⚔️ תחרות 1 על 1<br><small>אונליין מול חבר</small></button>
     <button class="big-btn gold-btn" onclick="showLeaderboard()">🏆 טבלת אלופים</button>
     <button class="big-btn orange" onclick="showScreen('teacherReportsScreen')">📊 צפייה בדוחות</button>
     <button class="big-btn pink"   onclick="showScreen('viewQuestionsScreen')">👀 צפייה בשאלות</button>
@@ -151,6 +152,64 @@
     <button class="btn blue" onclick="copyCode()">📋 העתק קוד</button>
   </div>
   <button class="btn green" onclick="showScreen('homeScreen')">🏠 חזרה לדף הבית</button>
+</div>
+
+<!-- ============ תחרות 1 על 1 ============ -->
+<div id="duelHomeScreen" class="screen">
+  <button class="back-btn" onclick="showScreen('homeScreen')">⬅ חזרה</button>
+  <h2>⚔️ תחרות 1 על 1</h2>
+  <p class="muted" style="text-align:center">שני שחקנים, אותן שאלות, מי צודק יותר מנצח! כל שחקן במחשב שלו.</p>
+  <div class="home-buttons">
+    <button class="big-btn green" onclick="showScreen('duelCreateScreen')">➕ צור תחרות<br><small>קבל קוד ושלח לחבר</small></button>
+    <button class="big-btn blue" onclick="showScreen('duelJoinScreen')">🔗 הצטרף לתחרות<br><small>עם קוד מחבר</small></button>
+  </div>
+</div>
+
+<div id="duelCreateScreen" class="screen">
+  <button class="back-btn" onclick="showScreen('duelHomeScreen')">⬅ חזרה</button>
+  <h2>➕ צור תחרות</h2>
+  <div class="form-card">
+    <label>השם שלך</label>
+    <input type="text" id="duelHostName" placeholder="השם שלך">
+    <label>קוד המשחק (מאיזה משחק השאלות?)</label>
+    <input type="text" id="duelHostGame" placeholder="DEMO-A1">
+    <button class="btn green big" onclick="createDuel()">צור תחרות 🚀</button>
+  </div>
+  <div id="duelWaitBox" class="code-box" style="display:none">
+    <p>שלח לחבר את קוד התחרות:</p>
+    <div class="code-display" id="duelCodeDisplay">VS-0000</div>
+    <button class="btn blue" onclick="copyDuelCode()">📋 העתק קוד</button>
+    <p class="ai-status" id="duelWaitStatus">⏳ ממתין שהיריב יצטרף...</p>
+  </div>
+</div>
+
+<div id="duelJoinScreen" class="screen">
+  <button class="back-btn" onclick="showScreen('duelHomeScreen')">⬅ חזרה</button>
+  <h2>🔗 הצטרף לתחרות</h2>
+  <div class="form-card">
+    <label>השם שלך</label>
+    <input type="text" id="duelGuestName" placeholder="השם שלך">
+    <label>קוד התחרות</label>
+    <input type="text" id="duelGuestCode" placeholder="VS-1234">
+    <button class="btn green big" onclick="joinDuel()">הצטרף ⚔️</button>
+    <p class="ai-status" id="duelJoinStatus"></p>
+  </div>
+</div>
+
+<div id="duelPlayScreen" class="screen">
+  <button class="back-btn" onclick="leaveDuel()">⬅ יציאה</button>
+  <div id="duelScoreboard" class="duel-board"></div>
+  <p id="duelProgress" class="quiz-progress"></p>
+  <div id="duelQuestionBox" class="form-card"></div>
+  <p id="duelWaitOpponent" class="ai-status" style="text-align:center"></p>
+</div>
+
+<div id="duelResultScreen" class="screen">
+  <div id="duelResultBox"></div>
+  <div class="report-actions">
+    <button class="btn green" onclick="showScreen('duelHomeScreen')">⚔️ תחרות נוספת</button>
+    <button class="btn blue" onclick="showScreen('homeScreen')">🏠 לדף הבית</button>
+  </div>
 </div>
 
 <!-- ============ טבלת אלופים ============ -->

@@ -275,6 +275,220 @@ function renderLeaderboard() {
 }
 
 /* ============================================================
+   תחרות 1 על 1 (אונליין)
+   ============================================================ */
+let duelMatch = null;      // שורת התחרות מה-DB
+let duelRole = null;       // 'host' | 'guest'
+let duelQuestions = [];
+let duelIndex = 0;
+let duelScore = 0;
+let duelPoll = null;       // מזהה ה-interval של ה-polling
+let duelResultShown = false;
+
+function stopDuelPoll() { if (duelPoll) { clearInterval(duelPoll); duelPoll = null; } }
+
+/* ----- יצירת תחרות (מארח) ----- */
+async function createDuel() {
+  const name = document.getElementById("duelHostName").value.trim();
+  const gameCode = document.getElementById("duelHostGame").value.trim();
+  if (!name || !gameCode) { alert("נא להזין שם וקוד משחק"); return; }
+  try {
+    duelMatch = await createMatch(name, gameCode);
+  } catch (e) { alert(e.message); return; }
+  duelRole = "host";
+  document.getElementById("duelWaitBox").style.display = "block";
+  document.getElementById("duelCodeDisplay").textContent = duelMatch.match_code;
+  document.getElementById("duelWaitStatus").textContent = "⏳ ממתין שהיריב יצטרף...";
+
+  // המתנה להצטרפות היריב
+  stopDuelPoll();
+  let busy = false;
+  duelPoll = setInterval(async () => {
+    if (busy) return; busy = true;
+    try {
+      const m = await getMatch(duelMatch.match_code);
+      if (m && m.guest_name) {
+        duelMatch = m;
+        stopDuelPoll();
+        startDuelPlay();
+      }
+    } catch (e) { console.error(e); }
+    busy = false;
+  }, 1500);
+}
+
+function copyDuelCode() {
+  const code = duelMatch ? duelMatch.match_code : "";
+  navigator.clipboard.writeText(code).then(() => alert("הקוד הועתק: " + code), () => alert("הקוד: " + code));
+}
+
+/* ----- הצטרפות לתחרות (יריב) ----- */
+async function joinDuel() {
+  const name = document.getElementById("duelGuestName").value.trim();
+  const code = document.getElementById("duelGuestCode").value.trim();
+  if (!name || !code) { alert("נא להזין שם וקוד תחרות"); return; }
+  const status = document.getElementById("duelJoinStatus");
+  status.className = "ai-status";
+  status.textContent = "מצטרף...";
+  try {
+    duelMatch = await joinMatch(code, name);
+  } catch (e) { status.className = "ai-status err"; status.textContent = e.message; return; }
+  duelRole = "guest";
+  startDuelPlay();
+}
+
+/* ----- התחלת המשחק לשני השחקנים ----- */
+async function startDuelPlay() {
+  duelResultShown = false;
+  duelIndex = 0;
+  duelScore = 0;
+  try {
+    duelQuestions = await getMatchQuestions(duelMatch);
+  } catch (e) { alert("שגיאה בטעינת השאלות"); return; }
+  if (!duelQuestions.length) { alert("אין שאלות לתחרות"); return; }
+
+  showScreen("duelPlayScreen");
+  document.getElementById("duelWaitOpponent").textContent = "";
+  renderDuelScoreboard();
+  renderDuelQuestion();
+
+  // polling לעדכון ניקוד היריב וסיום
+  stopDuelPoll();
+  let busy = false;
+  duelPoll = setInterval(async () => {
+    if (busy) return; busy = true;
+    try {
+      const m = await getMatch(duelMatch.match_code);
+      if (m) {
+        // שמירת השדות שלי המקומיים, עדכון שדות היריב
+        duelMatch = m;
+        renderDuelScoreboard();
+        if (m.host_done && m.guest_done) showDuelResult();
+      }
+    } catch (e) { console.error(e); }
+    busy = false;
+  }, 1500);
+}
+
+/* ----- לוח ניקוד (אני מול יריב) ----- */
+function renderDuelScoreboard() {
+  const m = duelMatch;
+  const n = duelQuestions.length;
+  const meName = duelRole === "host" ? m.host_name : m.guest_name;
+  const oppName = (duelRole === "host" ? m.guest_name : m.host_name) || "ממתין...";
+  const oppScore = duelRole === "host" ? m.guest_score : m.host_score;
+  const oppProg = duelRole === "host" ? m.guest_progress : m.host_progress;
+  const oppDone = duelRole === "host" ? m.guest_done : m.host_done;
+  document.getElementById("duelScoreboard").innerHTML = `
+    <div class="duel-side me">
+      <div class="duel-name">😀 ${escapeHtml(meName)} (אני)</div>
+      <div class="duel-score">${duelScore}</div>
+    </div>
+    <div class="duel-vs">VS</div>
+    <div class="duel-side opp">
+      <div class="duel-name">😎 ${escapeHtml(oppName)}</div>
+      <div class="duel-score">${oppScore}</div>
+      <div class="duel-mini">${oppDone ? "סיים! ✓" : "ענה " + oppProg + "/" + n}</div>
+    </div>`;
+}
+
+/* ----- ציור שאלת תחרות ----- */
+function renderDuelQuestion() {
+  const n = duelQuestions.length;
+  const box = document.getElementById("duelQuestionBox");
+
+  if (duelIndex >= n) {
+    // סיימתי את כל השאלות
+    box.innerHTML = "<h2 class='question-text'>סיימת! 🎉</h2>";
+    document.getElementById("duelProgress").textContent = "";
+    document.getElementById("duelWaitOpponent").textContent = "⏳ ממתין שהיריב יסיים...";
+    const fields = duelRole === "host"
+      ? { host_score: duelScore, host_progress: n, host_done: true }
+      : { guest_score: duelScore, guest_progress: n, guest_done: true };
+    patchMatch(duelMatch.match_code, fields).catch(e => console.error(e));
+    return;
+  }
+
+  document.getElementById("duelProgress").textContent = "שאלה " + (duelIndex + 1) + " מתוך " + n;
+  const q = duelQuestions[duelIndex];
+  let answerHtml;
+  if (q.type === "open") {
+    answerHtml = `<input type="text" id="duelInput" class="answer-input" placeholder="כתוב תשובה" autocomplete="off">
+      <button class="btn" onclick="duelOpenSubmit()">שלח</button>`;
+  } else if (q.type === "truefalse") {
+    answerHtml = `<button class="btn answer-option" onclick="duelAnswer('נכון')">נכון</button>
+      <button class="btn answer-option" onclick="duelAnswer('לא נכון')">לא נכון</button>`;
+  } else {
+    answerHtml = shuffle([q.correctAnswer, ...q.wrongAnswers]).map(opt =>
+      `<button class="btn answer-option" onclick="duelAnswer('${escapeAttr(opt)}')">${escapeHtml(opt)}</button>`
+    ).join("");
+  }
+  box.innerHTML = `<h2 class="question-text">${escapeHtml(q.text)}</h2>
+    <div class="answer-area">${answerHtml}</div>
+    <div id="duelFeedback" class="feedback"></div>`;
+  if (q.type === "open") setTimeout(() => document.getElementById("duelInput")?.focus(), 100);
+}
+
+function duelOpenSubmit() {
+  const v = document.getElementById("duelInput").value.trim();
+  if (!v) { alert("נא לכתוב תשובה"); return; }
+  duelAnswer(v);
+}
+
+/* ----- בדיקת תשובה בתחרות ----- */
+function duelAnswer(val) {
+  const q = duelQuestions[duelIndex];
+  const correct = normalize(val) === normalize(q.correctAnswer);
+  const fb = document.getElementById("duelFeedback");
+  if (correct) { duelScore++; if (fb) { fb.className = "feedback correct"; fb.textContent = "נכון! 🎉"; } }
+  else if (fb) { fb.className = "feedback wrong"; fb.textContent = "טעות (" + q.correctAnswer + ")"; }
+
+  // נטרול כפתורים כדי למנוע לחיצה כפולה
+  document.querySelectorAll("#duelQuestionBox .answer-option, #duelQuestionBox .btn").forEach(b => b.disabled = true);
+
+  duelIndex++;
+  renderDuelScoreboard();
+  const fields = duelRole === "host"
+    ? { host_score: duelScore, host_progress: duelIndex }
+    : { guest_score: duelScore, guest_progress: duelIndex };
+  patchMatch(duelMatch.match_code, fields).catch(e => console.error(e));
+
+  setTimeout(renderDuelQuestion, 800);
+}
+
+/* ----- מסך תוצאה ----- */
+async function showDuelResult() {
+  if (duelResultShown) return;
+  duelResultShown = true;
+  stopDuelPoll();
+  let m = duelMatch;
+  try { const fresh = await getMatch(duelMatch.match_code); if (fresh) m = fresh; } catch (e) {}
+
+  const myScore = duelRole === "host" ? m.host_score : m.guest_score;
+  const oppScore = duelRole === "host" ? m.guest_score : m.host_score;
+  const oppName = (duelRole === "host" ? m.guest_name : m.host_name) || "יריב";
+  let title, emoji, cls;
+  if (myScore > oppScore) { title = "ניצחת! 🏆"; emoji = "🥇"; cls = "good"; }
+  else if (myScore < oppScore) { title = "הפסדת 😅"; emoji = "💪"; cls = "bad"; }
+  else { title = "תיקו! 🤝"; emoji = "🤝"; cls = ""; }
+
+  document.getElementById("duelResultBox").innerHTML = `
+    <h2 style="text-align:center">${emoji} ${title}</h2>
+    <div class="report-cards">
+      <div class="report-card ${cls}">אני: ${myScore} מתוך ${duelQuestions.length}</div>
+      <div class="report-card">${escapeHtml(oppName)}: ${oppScore} מתוך ${duelQuestions.length}</div>
+    </div>`;
+  showScreen("duelResultScreen");
+}
+
+/* ----- יציאה מהתחרות ----- */
+function leaveDuel() {
+  stopDuelPoll();
+  duelMatch = null; duelRole = null; duelQuestions = []; duelIndex = 0; duelScore = 0;
+  showScreen("homeScreen");
+}
+
+/* ============================================================
    בחירת משחק מוכן (browse) - רשימת כל המשחקים לפי כיתה ונושא
    ============================================================ */
 let browseGames = [];   // המשחקים שנטענו לרשימה

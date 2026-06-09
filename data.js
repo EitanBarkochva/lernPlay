@@ -133,6 +133,16 @@ async function sbInsert(table, body) {
   return res.json();
 }
 
+// עדכון נתונים (PATCH) -> מחזיר את השורות שעודכנו
+async function sbUpdate(path, body) {
+  const res = await sbFetch(path, {
+    method: "PATCH",
+    headers: { Prefer: "return=representation" },
+    body: JSON.stringify(body)
+  });
+  return res.json();
+}
+
 /* ============================================================
    שכבת localStorage — גיבוי מקומי (כשאין Supabase)
    ============================================================ */
@@ -506,6 +516,88 @@ async function generateQuestionsAI(params) {
     coins: 10,
     explanation: x.expl || ""
   }));
+}
+
+/* ============================================================
+   תחרות 1 על 1 (אונליין) — דרך טבלת matches
+   ============================================================ */
+
+/* יצירת קוד תחרות בפורמט VS-1234 */
+function generateMatchCode() {
+  return "VS-" + Math.floor(1000 + Math.random() * 9000);
+}
+
+/* createMatch(hostName, gameCode) - מארח יוצר תחרות חדשה.
+   בוחר עד 10 שאלות אקראיות מהמשחק, שמורות בסדר קבוע לשני השחקנים. */
+async function createMatch(hostName, gameCode) {
+  if (!USE_SUPABASE) throw new Error("התחרות דורשת חיבור למסד הנתונים");
+  const game = await getGameByCode(gameCode);
+  if (!game) throw new Error("קוד המשחק לא נמצא");
+  if (!game.questions.length) throw new Error("אין שאלות במשחק הזה");
+
+  // בחירת עד 10 שאלות אקראיות (סדר קבוע לשני השחקנים)
+  const ids = shuffleArr(game.questions.map(q => q.id)).slice(0, Math.min(10, game.questions.length));
+
+  // קוד תחרות ייחודי
+  let code;
+  for (let i = 0; i < 6; i++) {
+    code = generateMatchCode();
+    const existing = await getMatch(code);
+    if (!existing) break;
+  }
+
+  const ins = await sbInsert("matches", {
+    match_code: code,
+    game_code: game.code,
+    question_ids: ids,
+    host_name: hostName,
+    status: "waiting"
+  });
+  return ins[0];
+}
+
+/* getMatch(code) - שליפת תחרות לפי קוד */
+async function getMatch(code) {
+  if (!USE_SUPABASE) return null;
+  const rows = await sbSelect("matches?match_code=ilike." + enc((code || "").trim()) + "&select=*&limit=1");
+  return rows.length ? rows[0] : null;
+}
+
+/* joinMatch(code, guestName) - יריב מצטרף לתחרות */
+async function joinMatch(code, guestName) {
+  const m = await getMatch(code);
+  if (!m) throw new Error("קוד התחרות לא נמצא");
+  if (m.guest_name) throw new Error("התחרות כבר מלאה");
+  const upd = await sbUpdate("matches?match_code=ilike." + enc(m.match_code), {
+    guest_name: guestName,
+    status: "playing"
+  });
+  return upd[0];
+}
+
+/* patchMatch(code, fields) - עדכון שדות התחרות (ניקוד/התקדמות/סיום) */
+async function patchMatch(code, fields) {
+  const upd = await sbUpdate("matches?match_code=ilike." + enc((code || "").trim()), fields);
+  return upd[0];
+}
+
+/* getMatchQuestions(match) - שאלות התחרות לפי הסדר השמור */
+async function getMatchQuestions(match) {
+  const game = await getGameByCode(match.game_code);
+  if (!game) return [];
+  const byId = {};
+  game.questions.forEach(q => { byId[q.id] = q; });
+  return (match.question_ids || []).map(id => byId[id]).filter(Boolean);
+}
+
+/* ערבוב מערך (עותק) */
+function shuffleArr(a) {
+  const arr = a.slice();
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
 }
 
 /* ------------------------------------------------------------

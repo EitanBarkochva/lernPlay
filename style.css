@@ -50,6 +50,20 @@ h3 { margin: 12px 0; color: #2c3e50; }
 .big-btn.pink   { background: #e84393; }
 .big-btn.teal   { background: #16a085; }
 .big-btn.gold-btn { background: #f1c40f; color: #5a4500; }
+.big-btn.red-btn { background: #c0392b; }
+
+/* ----- תחרות 1 על 1 ----- */
+.duel-board {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  background: #2c3e50; color: #fff; border-radius: 16px; padding: 14px; margin-bottom: 14px;
+}
+.duel-side { flex: 1; text-align: center; }
+.duel-side.me { background: rgba(39,174,96,.25); border-radius: 12px; padding: 8px; }
+.duel-side.opp { background: rgba(231,76,60,.25); border-radius: 12px; padding: 8px; }
+.duel-name { font-size: .95rem; font-weight: bold; }
+.duel-score { font-size: 2.2rem; font-weight: bold; }
+.duel-mini { font-size: .8rem; opacity: .85; }
+.duel-vs { font-size: 1.2rem; font-weight: bold; color: #f1c40f; }
 
 .demo-hint { text-align: center; background: #fff3cd; padding: 12px; border-radius: 12px; }
 
