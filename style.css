@@ -346,6 +346,30 @@ h3 { margin: 12px 0; color: #243746; }
   background: #e8f7f3; padding: 3px 12px; border-radius: 999px;
 }
 
+/* ----- דף עזרה ----- */
+.help-intro { text-align: center; margin-bottom: 16px; line-height: 1.7; }
+.help-item {
+  background: rgba(255,255,255,.92); border: 1px solid #e3e9f0; border-radius: 14px;
+  margin-bottom: 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,.05);
+}
+.help-item summary {
+  cursor: pointer; padding: 14px 16px; font-weight: 800; font-size: 1.05rem; color: #243746;
+  list-style: none; display: flex; align-items: center; justify-content: space-between; gap: 8px;
+}
+.help-item summary::-webkit-details-marker { display: none; }
+.help-item summary::after { content: "▾"; color: #3aa0e6; transition: transform .2s; font-size: 1rem; }
+.help-item[open] summary::after { transform: rotate(180deg); }
+.help-item summary:hover { background: #f3f9ff; }
+.help-body { padding: 2px 16px 16px; color: #3b4a57; line-height: 1.75; }
+.help-body p { margin: 6px 0; }
+.help-body ul { margin: 6px 20px; }
+.help-body li { margin: 5px 0; }
+.help-body b { color: #243746; }
+.help-tip {
+  background: #fff8e1; border-right: 4px solid #f0c040; padding: 8px 12px;
+  border-radius: 8px; margin-top: 10px; font-weight: 600;
+}
+
 /* ----- רספונסיבי (טלפון מאונך) ----- */
 @media (max-width: 600px) {
   body { font-size: 16px; padding: 10px; }
