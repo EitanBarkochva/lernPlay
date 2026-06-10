@@ -52,7 +52,7 @@ const appConfig = {
     { id: "race",      name: "מרוץ",       active: false }
   ],
   grades: ["א", "ב", "ג", "ד", "ה", "ו", "ז", "ח", "ט", "י", "יא", "יב"],
-  subjects: ["חשבון", "עברית", "אנגלית", "תורה", "מדעים", "פיזיקה", "תכנות"],
+  subjects: ["חשבון", "עברית", "אנגלית", "תורה", "מדעים", "פיזיקה", "תכנות", "פסיכומטרי"],
   topics: [
     "חיבור עד 10", "חיסור עד 10", "חיבור עד 20", "חיסור עד 20",
     "מספרים חסרים", "השוואת מספרים", "בעיות מילוליות פשוטות"
@@ -211,6 +211,8 @@ async function getGameByCode(code) {
     title: g.title || "תרגול",
     subject: subjectName(g.subject_id),
     grade: gradeName(g.grade_id),
+    topic: topicNameById(g.topic_id),
+    subTopic: g.sub_topic || "",
     gameType: gameTypeCodeById(g.game_type_id),
     levels: Math.max(1, Math.round(questions.length / 5)), // ~5 שאלות לשלב
     questions: questions
@@ -233,6 +235,9 @@ async function saveGame(game) {
   // 1) מציאת/יצירת יוצר
   const creator_id = await resolveCreator(game);
 
+  // 1ב) מציאת/יצירת נושא לפי השם שהוקלד (תומך בנושאים חדשים)
+  const topic_id = await resolveTopic(game.topic, game.subject, game.grade);
+
   // 2) יצירת רשומת המשחק
   const ins = await sbInsert("learning_games", {
     game_code: game.code,
@@ -240,7 +245,8 @@ async function saveGame(game) {
     creator_id: creator_id,
     grade_id: game.grade || null,
     subject_id: game.subject || null,
-    topic_id: game.topic || null,
+    topic_id: topic_id,
+    sub_topic: game.subTopic || null,
     game_type_id: game.gameType || null,
     is_active: true
   });
@@ -271,6 +277,34 @@ async function saveGame(game) {
     }
   });
   if (optBody.length) await sbInsert("question_options", optBody);
+}
+
+/* מציאת נושא לפי שם (בתוך המקצוע), או יצירת נושא חדש.
+   מקבל שם נושא חופשי שהוקלד ומחזיר את ה-uuid שלו. */
+async function resolveTopic(name, subjectId, gradeId) {
+  const clean = (name || "").trim();
+  if (!clean) return null;
+
+  // אם כבר קיים במטמון (אותו שם + מקצוע) - נשתמש בו
+  const cached = lookups.topics.find(t =>
+    t.name === clean && (!subjectId || !t.subject_id || t.subject_id === subjectId));
+  if (cached) return cached.id;
+
+  // חיפוש בשרת
+  let path = "topics?name=eq." + enc(clean) + "&select=id,name,subject_id,grade_id&limit=1";
+  if (subjectId) path = "topics?name=eq." + enc(clean) + "&subject_id=eq." + subjectId +
+                        "&select=id,name,subject_id,grade_id&limit=1";
+  const found = await sbSelect(path).catch(() => []);
+  if (found.length) { lookups.topics.push(found[0]); return found[0].id; }
+
+  // יצירת נושא חדש
+  const ins = await sbInsert("topics", {
+    name: clean,
+    subject_id: subjectId || null,
+    grade_id: gradeId || null
+  });
+  if (ins.length) { lookups.topics.push(ins[0]); return ins[0].id; }
+  return null;
 }
 
 /* מציאת יוצר לפי אימייל, או יצירת חדש */
@@ -431,11 +465,11 @@ async function listGames() {
     return db.games.map(g => ({
       code: g.code, title: g.title,
       grade: g.grade || "", gradeOrder: 0,
-      subject: g.subject || "", topic: g.topic || ""
+      subject: g.subject || "", topic: g.topic || "", subTopic: g.subTopic || ""
     }));
   }
   const rows = await sbSelect(
-    "learning_games?is_active=eq.true&select=game_code,title,grade_id,subject_id,topic_id"
+    "learning_games?is_active=eq.true&select=game_code,title,grade_id,subject_id,topic_id,sub_topic"
   );
   return rows.map(r => ({
     code: r.game_code,
@@ -443,7 +477,8 @@ async function listGames() {
     grade: gradeName(r.grade_id),
     gradeOrder: gradeOrderById(r.grade_id),
     subject: subjectName(r.subject_id),
-    topic: topicNameById(r.topic_id)
+    topic: topicNameById(r.topic_id),
+    subTopic: r.sub_topic || ""
   }));
 }
 
@@ -686,7 +721,8 @@ async function seedDemoGame() {
     creatorEmail: "teacher@example.com",
     grade: gradeRef("א"),
     subject: subjectRef("חשבון"),
-    topic: topicRef("חיבור עד 10"),
+    topic: "חיבור עד 10",
+    subTopic: "",
     gameType: gameTypeRef("mario"),
     title: "תרגול חשבון לכיתה א",
     levels: 10,

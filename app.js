@@ -50,21 +50,22 @@ window.addEventListener("DOMContentLoaded", async () => {
 function fillDropdowns() {
   const gradeSel    = document.getElementById("grade");
   const subjectSel  = document.getElementById("subject");
-  const topicSel    = document.getElementById("topic");
+  const topicList   = document.getElementById("topicsDatalist");
   const gameTypeSel = document.getElementById("gameType");
-  [gradeSel, subjectSel, topicSel, gameTypeSel].forEach(s => s.innerHTML = "");
+  [gradeSel, subjectSel, topicList, gameTypeSel].forEach(s => s.innerHTML = "");
 
+  // הנושא הוא שדה טקסט חופשי עם רשימת הצעות (datalist) — אפשר לבחור קיים או להקליד חדש
   if (USE_SUPABASE) {
     lookups.grades.forEach(g => gradeSel.add(new Option("כיתה " + g.name, g.id)));
     lookups.subjects.forEach(s => subjectSel.add(new Option(s.name, s.id)));
-    lookups.topics.forEach(t => topicSel.add(new Option(t.name, t.id)));
+    lookups.topics.forEach(t => topicList.appendChild(new Option(t.name)));
     lookups.gameTypes.forEach(gt => gameTypeSel.add(new Option(gt.name, gt.id)));
   } else {
     appConfig.grades.forEach(g => gradeSel.add(new Option("כיתה " + g, g)));
     gradeSel.value = "א";
     appConfig.subjects.forEach(s => subjectSel.add(new Option(s, s)));
     subjectSel.value = "חשבון";
-    appConfig.topics.forEach(t => topicSel.add(new Option(t, t)));
+    appConfig.topics.forEach(t => topicList.appendChild(new Option(t)));
     appConfig.gameTypes.forEach(gt => {
       const opt = new Option(gt.name + (gt.active ? "" : " (בקרוב)"), gt.id);
       if (!gt.active) opt.disabled = true;
@@ -89,7 +90,8 @@ function createGame() {
     creatorType: document.getElementById("creatorType").value,
     grade: document.getElementById("grade").value,
     subject: document.getElementById("subject").value,
-    topic: document.getElementById("topic").value,
+    topic: document.getElementById("topic").value.trim(),
+    subTopic: document.getElementById("subTopic").value.trim(),
     gameType: document.getElementById("gameType").value,
     creatorEmail: document.getElementById("creatorEmail").value.trim(),
     title: document.getElementById("gameTitle").value.trim() || "תרגול",
@@ -144,7 +146,8 @@ async function generateAIQuestions() {
   const gradeText = (document.getElementById("grade").selectedOptions[0]?.text || "")
     .replace("כיתה", "").trim();
   const subject = document.getElementById("subject").selectedOptions[0]?.text || "";
-  const topic = document.getElementById("topic").selectedOptions[0]?.text || "";
+  const topic = document.getElementById("topic").value.trim();
+  const subTopic = document.getElementById("subTopic").value.trim();
   const difficulty = document.getElementById("aiDifficulty").value || "קל";
   const type = document.getElementById("aiType").value || "multiple";
 
@@ -153,7 +156,7 @@ async function generateAIQuestions() {
   btn.disabled = true;
 
   try {
-    const qs = await generateQuestionsAI({ subject, grade: gradeText, topic, count, difficulty, type });
+    const qs = await generateQuestionsAI({ subject, grade: gradeText, topic, subTopic, count, difficulty, type });
     if (!qs.length) { status.textContent = "לא התקבלו שאלות. נסה שוב."; return; }
     draftGame.questions.push(...qs);
     renderQuestionsList();
@@ -186,6 +189,207 @@ function renderQuestionsList() {
 function removeQuestion(i) {
   draftGame.questions.splice(i, 1);
   renderQuestionsList();
+}
+
+/* ============================================================
+   ייבוא שאלות מקובץ (Excel / CSV / טקסט)
+   ============================================================ */
+
+/* כותרות העמודות המוכרות (גמיש - תומך בכמה ניסוחים) */
+function matchColumn(key) {
+  const k = (key || "").toString().trim().toLowerCase().replace(/["']/g, "");
+  if (/(שאל|question|q\b)/.test(k)) return "text";
+  if (/(נכונה|תשובה נכונה|correct|answer|תשובה)/.test(k)) return "correct";
+  if (/(שגוי|מסיח|wrong|distract|אפשרויות)/.test(k)) return "wrong";
+  if (/(סוג|type)/.test(k)) return "type";
+  if (/(קוש|רמה|difficult|level)/.test(k)) return "difficulty";
+  if (/(מטבע|coin|points|נקוד)/.test(k)) return "coins";
+  if (/(הסבר|expl|explanation)/.test(k)) return "explanation";
+  return null;
+}
+
+function normType(v) {
+  const s = (v || "").toString().trim().toLowerCase();
+  if (/(true|false|נכון|לא נכון|truefalse)/.test(s)) return "truefalse";
+  if (/(open|פתוח)/.test(s)) return "open";
+  return "multiple";
+}
+function normDifficulty(v) {
+  const s = (v || "").toString().trim().toLowerCase();
+  if (/(בינוני|medium)/.test(s)) return "medium";
+  if (/(קשה|hard)/.test(s)) return "hard";
+  return "easy";
+}
+function splitWrongs(v) {
+  if (v == null) return [];
+  return v.toString().split(/[,;|]/).map(s => s.trim()).filter(Boolean);
+}
+
+/* המרת שורה (אובייקט עם מפתחות עבריים/אנגליים) לשאלה פנימית */
+function rowToQuestion(row, idx) {
+  const mapped = {};
+  Object.keys(row).forEach(key => {
+    const col = matchColumn(key);
+    if (col && mapped[col] == null) mapped[col] = row[key];
+  });
+  const text = (mapped.text || "").toString().trim();
+  const correct = (mapped.correct == null ? "" : mapped.correct).toString().trim();
+  if (!text || !correct) return null; // שורה לא תקינה
+  return {
+    id: "qimp_" + Date.now() + "_" + idx,
+    text: text,
+    type: normType(mapped.type),
+    correctAnswer: correct,
+    wrongAnswers: splitWrongs(mapped.wrong),
+    difficulty: normDifficulty(mapped.difficulty),
+    coins: parseInt(mapped.coins) || 10,
+    explanation: (mapped.explanation || "").toString().trim()
+  };
+}
+
+/* פירוק פורמט הטקסט הפשוט: כל שורה  שאלה | תשובה | שגויות | הסבר */
+function parseTextFormat(content) {
+  const out = [];
+  content.split(/\r?\n/).forEach((line, i) => {
+    const t = line.trim();
+    if (!t || t.startsWith("#")) return; // דילוג על שורות ריקות / הערות
+    const parts = t.split("|").map(s => s.trim());
+    if (parts.length < 2 || !parts[0] || !parts[1]) return;
+    out.push({
+      id: "qimp_" + Date.now() + "_" + i,
+      text: parts[0],
+      type: "multiple",
+      correctAnswer: parts[1],
+      wrongAnswers: splitWrongs(parts[2]),
+      difficulty: "easy",
+      coins: 10,
+      explanation: parts[3] || ""
+    });
+  });
+  return out;
+}
+
+/* פירוק גיליון Excel/CSV דרך SheetJS - תומך בכותרות או במבנה לפי מיקום */
+function parseSheet(workbook) {
+  const sheet = workbook.Sheets[workbook.SheetNames[0]];
+  if (!sheet) return [];
+  // raw:true מונע המרה אוטומטית של ערכים כמו "8,9,11" לתאריך/מספר
+  const rows = XLSX.utils.sheet_to_json(sheet, { defval: "", raw: true });
+  // אם יש כותרות מוכרות - נשתמש בהן
+  const hasKnownHeaders = rows.length && Object.keys(rows[0]).some(k => matchColumn(k));
+  if (hasKnownHeaders) {
+    return rows.map((r, i) => rowToQuestion(r, i)).filter(Boolean);
+  }
+  // אחרת - לפי מיקום: שאלה, תשובה, שגויות, סוג, קושי, מטבעות, הסבר
+  const aoa = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "", raw: true });
+  const out = [];
+  aoa.forEach((cells, i) => {
+    if (i === 0 && /שאל|question/i.test((cells[0] || "").toString())) return; // דילוג על כותרת
+    const text = (cells[0] || "").toString().trim();
+    const correct = (cells[1] == null ? "" : cells[1]).toString().trim();
+    if (!text || !correct) return;
+    out.push({
+      id: "qimp_" + Date.now() + "_" + i,
+      text: text,
+      type: normType(cells[3]),
+      correctAnswer: correct,
+      wrongAnswers: splitWrongs(cells[2]),
+      difficulty: normDifficulty(cells[4]),
+      coins: parseInt(cells[5]) || 10,
+      explanation: (cells[6] || "").toString().trim()
+    });
+  });
+  return out;
+}
+
+async function importQuestionsFile() {
+  if (!draftGame) { alert("צור קודם משחק"); return; }
+  const input = document.getElementById("importFile");
+  const status = document.getElementById("importStatus");
+  const file = input.files && input.files[0];
+  if (!file) return;
+
+  status.className = "ai-status";
+  status.textContent = "📥 קורא את הקובץ...";
+
+  try {
+    const name = file.name.toLowerCase();
+    let questions = [];
+
+    if (name.endsWith(".txt")) {
+      const text = await file.text();
+      // טקסט עם | -> פורמט פשוט; אחרת ננסה לפרק כ-CSV
+      questions = text.includes("|")
+        ? parseTextFormat(text)
+        : parseSheet(XLSX.read(text, { type: "string", raw: true }));
+    } else if (name.endsWith(".csv")) {
+      const text = await file.text();
+      questions = parseSheet(XLSX.read(text, { type: "string", raw: true }));
+    } else {
+      const buf = await file.arrayBuffer();
+      questions = parseSheet(XLSX.read(buf, { type: "array", raw: true }));
+    }
+
+    if (!questions.length) {
+      status.className = "ai-status err";
+      status.textContent = "לא נמצאו שאלות תקינות בקובץ. ודאו שיש עמודת שאלה ועמודת תשובה נכונה (הורידו תבנית לדוגמה).";
+      input.value = "";
+      return;
+    }
+
+    draftGame.questions.push(...questions);
+    renderQuestionsList();
+    status.className = "ai-status ok";
+    status.textContent = "✅ יובאו " + questions.length + " שאלות מהקובץ! אפשר לערוך, להוסיף עוד, או לסיים.";
+  } catch (e) {
+    console.error(e);
+    status.className = "ai-status err";
+    status.textContent = "שגיאה בקריאת הקובץ: " + e.message;
+  } finally {
+    input.value = ""; // לאפשר העלאה חוזרת של אותו קובץ
+  }
+}
+
+/* הורדת תבנית לדוגמה בפורמט המבוקש */
+function downloadTemplate(kind) {
+  const header = ["שאלה", "תשובה נכונה", "תשובות שגויות", "סוג", "רמת קושי", "מטבעות", "הסבר"];
+  const examples = [
+    ["כמה זה 4 + 3?", "7", "5, 6, 8", "בחירה מרובה", "קל", "10", "4 ועוד 3 הם 7"],
+    ["בירת ישראל היא ירושלים", "נכון", "לא נכון", "נכון/לא נכון", "קל", "10", "ירושלים היא בירת ישראל"],
+    ["מהי בירת צרפת?", "פריז", "", "תשובה פתוחה", "בינוני", "15", "פריז היא בירת צרפת"]
+  ];
+
+  if (kind === "txt") {
+    const lines = [
+      "# כל שורה היא שאלה אחת, בפורמט:  שאלה | תשובה נכונה | תשובות שגויות (מופרדות בפסיק) | הסבר",
+      "# שורות שמתחילות ב-# הן הערות ויידלגו.",
+      "כמה זה 4 + 3? | 7 | 5, 6, 8 | 4 ועוד 3 הם 7",
+      "מהי בירת צרפת? | פריז |  | פריז היא בירת צרפת"
+    ];
+    downloadBlob("תבנית-שאלות.txt", "﻿" + lines.join("\n"), "text/plain;charset=utf-8");
+    return;
+  }
+
+  const aoa = [header, ...examples];
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  if (kind === "csv") {
+    const csv = XLSX.utils.sheet_to_csv(ws);
+    downloadBlob("תבנית-שאלות.csv", "﻿" + csv, "text/csv;charset=utf-8");
+  } else {
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "שאלות");
+    XLSX.writeFile(wb, "תבנית-שאלות.xlsx");
+  }
+}
+
+function downloadBlob(filename, content, mime) {
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 /* ============================================================
@@ -660,7 +864,7 @@ function renderBrowse() {
       cards += `
         <button class="game-card" onclick="pickGame('${escapeAttr(g.code)}','${escapeAttr(g.grade)}')">
           <span class="game-card-topic">${escapeHtml(g.topic || g.title)}</span>
-          <span class="game-card-sub">${escapeHtml(g.subject)} · ${escapeHtml(g.code)}</span>
+          <span class="game-card-sub">${escapeHtml(g.subject)} · ${escapeHtml(g.code)}${g.subTopic ? " · " + escapeHtml(g.subTopic) : ""}</span>
           <span class="game-card-play">▶ שחק</span>
         </button>`;
     });
@@ -746,12 +950,37 @@ function showProgram(target) {
     html += `
       <button class="game-card" onclick="pickGame('${escapeAttr(g.code)}','${escapeAttr(g.grade)}')">
         <span class="game-card-topic">${escapeHtml(g.topic || g.title)}</span>
-        <span class="game-card-sub">${escapeHtml(g.subject)} · ${escapeHtml(g.code)}</span>
+        <span class="game-card-sub">${escapeHtml(g.subject)} · ${escapeHtml(g.code)}${g.subTopic ? " · " + escapeHtml(g.subTopic) : ""}</span>
         <span class="game-card-play">▶ שחק</span>
       </button>`;
   });
   if (last !== null) html += "</div>";
   c.innerHTML = html;
+}
+
+/* ============================================================
+   פסיכומטרי לילדים — משחקי חשיבה והיגיון לכיתות א–ו
+   ============================================================ */
+async function showPsycho() {
+  showScreen("psychoScreen");
+  const c = document.getElementById("psychoList");
+  c.innerHTML = "<p class='muted'>טוען...</p>";
+  let games;
+  try { games = await listGames(); }
+  catch (e) { console.error(e); c.innerHTML = "<p class='muted'>שגיאה בטעינה.</p>"; return; }
+
+  const list = games
+    .filter(g => g.subject === "פסיכומטרי")
+    .sort((a, b) => (a.gradeOrder - b.gradeOrder) || a.code.localeCompare(b.code));
+
+  if (!list.length) { c.innerHTML = "<p class='muted'>עדיין אין משחקי פסיכומטרי זמינים.</p>"; return; }
+
+  c.innerHTML = '<div class="browse-grid">' + list.map(g => `
+    <button class="game-card" onclick="pickGame('${escapeAttr(g.code)}','${escapeAttr(g.grade)}')">
+      <span class="game-card-topic">🧠 כיתה ${escapeHtml(g.grade)}</span>
+      <span class="game-card-sub">${escapeHtml(g.title)} · ${escapeHtml(g.code)}</span>
+      <span class="game-card-play">▶ שחק</span>
+    </button>`).join("") + "</div>";
 }
 
 /* ============================================================
@@ -827,7 +1056,7 @@ function renderExams() {
     html += `
       <button class="game-card" onclick="startExam('${escapeAttr(g.code)}')">
         <span class="game-card-topic">${escapeHtml(g.topic || g.title)}</span>
-        <span class="game-card-sub">${escapeHtml(g.subject)} · ${escapeHtml(g.code)}</span>
+        <span class="game-card-sub">${escapeHtml(g.subject)} · ${escapeHtml(g.code)}${g.subTopic ? " · " + escapeHtml(g.subTopic) : ""}</span>
         <span class="game-card-play">📝 התחל מבחן</span>
       </button>`;
   });
@@ -859,11 +1088,11 @@ async function startExamWith(code, name, minutes) {
   renderExamQuestion();
 }
 
-/* מעבר ממסך הדוח ישר למבחן על אותו הנושא */
+/* מעבר ממסך הדוח ישר למבחן על אותו הנושא (עם שאלת טיימר) */
 function startExamFromReport() {
   if (!activeGame || !activeGame.code) { showExams(); return; }
   const name = (typeof student !== "undefined" && student && student.name) ? student.name : "תלמיד";
-  startExamWith(activeGame.code, name, 0);
+  askExamTimer(minutes => startExamWith(activeGame.code, name, minutes));
 }
 
 function startExamTimer() {
@@ -981,7 +1210,7 @@ function showExamResult(correct, total, pct, timedOut) {
   mountEmailPanel("examEmail", examGame.creatorEmail || "");
 
   showScreen("examResultScreen");
-  if (pass) setTimeout(() => launchConfetti(pct >= 90 ? 3200 : 2400), 250);   // 🎉 חגיגה בהצלחה
+  if (pass) { setTimeout(() => launchConfetti(pct >= 90 ? 3200 : 2400), 250); playVictory(); }   // 🎉🔊 חגיגה בהצלחה
 }
 
 function buildExamEmailBody(correct, total, pct) {
@@ -1287,6 +1516,7 @@ function showStudentReport(result, correctCount, wrongCount) {
 
   showScreen("studentReportScreen");
   setTimeout(() => launchConfetti(), 250);   // 🎉 חגיגה!
+  playVictory();                              // 🔊 צליל ניצחון
 }
 
 function buildStudentEmailBody(game, result, correctCount, wrongCount) {
@@ -1517,8 +1747,10 @@ async function viewQuestions() {
       ${q.explanation ? `<p class="muted">הסבר: ${escapeHtml(q.explanation)}</p>` : ""}
     </div>`).join("");
 
+  const topicLine = [game.topic, game.subTopic].filter(Boolean).map(escapeHtml).join(" › ");
   document.getElementById("viewQuestionsResult").innerHTML =
-    `<h3>${escapeHtml(game.title)} — ${escapeHtml(game.subject)}</h3>` + html;
+    `<h3>${escapeHtml(game.title)} — ${escapeHtml(game.subject)}</h3>` +
+    (topicLine ? `<p class="muted">${topicLine}</p>` : "") + html;
 }
 
 /* ============================================================
@@ -1592,6 +1824,80 @@ function launchConfetti(duration) {
     }
   }
   requestAnimationFrame(frame);
+}
+
+/* ============================================================
+   🔊 צליל ניצחון (Web Audio, ללא קבצים) + טוגל השתקה
+   ============================================================ */
+let _audioCtx = null;
+function getAudioCtx() {
+  try {
+    if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (_audioCtx.state === "suspended") _audioCtx.resume();
+    return _audioCtx;
+  } catch (e) { return null; }
+}
+function soundEnabled() { return localStorage.getItem("soundOn") !== "0"; }
+
+function playVictory() {
+  if (!soundEnabled()) return;
+  const ctx = getAudioCtx(); if (!ctx) return;
+  const now = ctx.currentTime;
+  const beep = (f, t, dur, type, vol) => {
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = type || "triangle"; o.frequency.value = f;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol || 0.25, t + 0.03);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g).connect(ctx.destination);
+    o.start(t); o.stop(t + dur + 0.02);
+  };
+  // ארפג'ו עולה C5-E5-G5-C6 ואז אקורד נוצץ
+  const notes = [523.25, 659.25, 783.99, 1046.5];
+  notes.forEach((f, i) => beep(f, now + i * 0.12, 0.4, "triangle", 0.25));
+  const t2 = now + notes.length * 0.12;
+  beep(1046.5, t2, 0.6, "sine", 0.2);
+  beep(1318.5, t2, 0.6, "sine", 0.18);
+}
+
+function updateSoundBtn() {
+  const b = document.getElementById("soundToggle");
+  if (b) b.textContent = soundEnabled() ? "🔊" : "🔇";
+}
+function toggleSound() {
+  const on = soundEnabled();
+  localStorage.setItem("soundOn", on ? "0" : "1");
+  updateSoundBtn();
+  if (on) {} else playVictory();   // השמעת דוגמה כשמדליקים
+}
+document.addEventListener("DOMContentLoaded", updateSoundBtn);
+
+/* ============================================================
+   ⏱️ מודל בחירת טיימר למבחן (מתוך דוח התלמיד)
+   ============================================================ */
+function askExamTimer(cb) {
+  const overlay = document.createElement("div");
+  overlay.className = "modal show";
+  overlay.innerHTML = `
+    <div class="modal-content">
+      <h2 class="question-text">📝 רוצים טיימר למבחן?</h2>
+      <div class="answer-area">
+        <button class="btn green" data-min="0">⏱️ בלי הגבלת זמן</button>
+        <button class="btn blue" data-min="5">5 דקות</button>
+        <button class="btn blue" data-min="10">10 דקות</button>
+        <button class="btn blue" data-min="15">15 דקות</button>
+        <button class="btn-small" data-min="cancel" style="margin-top:8px">ביטול</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener("click", e => {
+    const b = e.target.closest("button[data-min]");
+    if (!b) return;
+    const v = b.getAttribute("data-min");
+    overlay.remove();
+    if (v === "cancel") return;
+    cb(parseInt(v) || 0);
+  });
 }
 
 // ערבוב מערך (Fisher-Yates)

@@ -11,6 +11,8 @@
 </head>
 <body>
 
+<button id="soundToggle" class="sound-toggle" onclick="toggleSound()" title="צליל מופעל/מושתק" aria-label="הפעלת/השתקת צליל">🔊</button>
+
 <!-- ============ 1. דף בית ============ -->
 <div id="homeScreen" class="screen active">
   <div class="hero">
@@ -23,6 +25,7 @@
     <button class="big-btn indigo" onclick="showBands()">📘 אנגלית - Bands<br><small>אוצר מילים I / II / III</small></button>
     <button class="big-btn dark"   onclick="showExams()">📝 מבחנים<br><small>בחר בחינה + טיימר</small></button>
     <button class="big-btn teal2"  onclick="showPrograms()">🎓 תוכניות עולה<br><small>מוכנים לשנה הבאה</small></button>
+    <button class="big-btn purple"  onclick="showPsycho()">🧠 פסיכומטרי לילדים<br><small>חשיבה והיגיון · כיתות א–ו</small></button>
     <button class="big-btn blue"   onclick="showScreen('studentLoginScreen')">🕹️ כניסה עם קוד<br><small>לתלמיד</small></button>
     <button class="big-btn purple" onclick="showScreen('quizOnlyScreen')">📝 שאלות בלי משחק</button>
     <button class="big-btn red-btn" onclick="showScreen('duelHomeScreen')">⚔️ תחרות 1 על 1<br><small>אונליין מול חבר</small></button>
@@ -53,8 +56,12 @@
     <label>מקצוע</label>
     <select id="subject"></select>
 
-    <label>נושא</label>
-    <select id="topic"></select>
+    <label>נושא <small class="muted">(אפשר לבחור מהרשימה או להקליד נושא חדש)</small></label>
+    <input type="text" id="topic" list="topicsDatalist" placeholder="לדוגמה: חיבור עד 10" autocomplete="off">
+    <datalist id="topicsDatalist"></datalist>
+
+    <label>תת-נושא <small class="muted">(לא חובה)</small></label>
+    <input type="text" id="subTopic" placeholder="לדוגמה: חיבור עם מעבר עשרת" autocomplete="off">
 
     <label>סוג משחק</label>
     <select id="gameType"></select>
@@ -142,6 +149,18 @@
     </div>
     <button id="aiBtn" class="btn purple big" onclick="generateAIQuestions()">✨ צור שאלות ב-AI</button>
     <p id="aiStatus" class="ai-status"></p>
+  </div>
+
+  <div class="form-card import-card">
+    <label>📁 ייבוא שאלות מקובץ</label>
+    <p class="muted">העלו קובץ Excel, CSV או טקסט עם רשימת שאלות. הורידו תבנית כדי לראות את המבנה הנדרש.</p>
+    <div class="import-templates">
+      <button type="button" class="btn-small" onclick="downloadTemplate('xlsx')">⬇ תבנית Excel</button>
+      <button type="button" class="btn-small" onclick="downloadTemplate('csv')">⬇ תבנית CSV</button>
+      <button type="button" class="btn-small" onclick="downloadTemplate('txt')">⬇ תבנית טקסט</button>
+    </div>
+    <input type="file" id="importFile" accept=".xlsx,.xls,.csv,.txt" onchange="importQuestionsFile()">
+    <p id="importStatus" class="ai-status"></p>
   </div>
 
   <div id="questionsList" class="questions-list"></div>
@@ -330,6 +349,14 @@
   <div id="programGamesList"></div>
 </div>
 
+<!-- ============ פסיכומטרי לילדים ============ -->
+<div id="psychoScreen" class="screen">
+  <button class="back-btn" onclick="showScreen('homeScreen')">⬅ חזרה</button>
+  <h2>🧠 פסיכומטרי לילדים</h2>
+  <p class="muted" style="text-align:center;margin-top:-6px">שאלות חשיבה והיגיון מותאמות גיל — סדרות, אנלוגיות, יוצא דופן והסקה לוגית. בחרו כיתה כדי להתחיל 💡</p>
+  <div id="psychoList"></div>
+</div>
+
 <!-- ============ 5. כניסת תלמיד ============ -->
 <div id="studentLoginScreen" class="screen">
   <button class="back-btn" onclick="showScreen('homeScreen')">⬅ חזרה</button>
@@ -443,6 +470,9 @@
   </div>
   <div id="viewQuestionsResult"></div>
 </div>
+
+<!-- ספריית קריאת קבצי Excel/CSV (לייבוא שאלות) -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
 <!-- סדר הטעינה חשוב: קודם הנתונים, אחר כך המשחק, ולבסוף הלוגיקה -->
 <script src="data.js"></script>
