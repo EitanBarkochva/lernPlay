@@ -26,8 +26,8 @@
     <button class="big-btn dark"   onclick="showExams()">📝 מבחנים<br><small>בחר בחינה + טיימר</small></button>
     <button class="big-btn teal2"  onclick="showPrograms()">🎓 תוכניות עולה<br><small>מוכנים לשנה הבאה</small></button>
     <button class="big-btn purple"  onclick="showPsycho()">🧠 פסיכומטרי לילדים<br><small>חשיבה והיגיון · כיתות א–ו</small></button>
-    <button class="big-btn blue"   onclick="showScreen('studentLoginScreen')">🕹️ כניסה עם קוד<br><small>לתלמיד</small></button>
-    <button class="big-btn purple" onclick="showScreen('quizOnlyScreen')">📝 שאלות בלי משחק</button>
+    <button class="big-btn blue"   onclick="showStudentLogin()">🕹️ כניסה עם קוד<br><small>לתלמיד</small></button>
+    <button class="big-btn purple" onclick="showQuizOnly()">📝 שאלות בלי משחק</button>
     <button class="big-btn red-btn" onclick="showScreen('duelHomeScreen')">⚔️ תחרות 1 על 1<br><small>אונליין מול חבר</small></button>
     <button class="big-btn gold-btn" onclick="showLeaderboard()">🏆 טבלת אלופים</button>
     <button class="big-btn orange" onclick="showScreen('teacherReportsScreen')">📊 צפייה בדוחות</button>
@@ -367,8 +367,9 @@
     <input type="text" id="studentName" placeholder="השם שלך">
     <label>כיתה</label>
     <input type="text" id="studentGrade" placeholder="א">
-    <label>קוד משחק</label>
-    <input type="text" id="gameCode" placeholder="DEMO-A1">
+    <label>קוד משחק <small class="muted">(בחרו מהרשימה או חפשו את הקוד שהמורה נתן)</small></label>
+    <input type="text" id="gameCode" list="gameCodesDatalist" placeholder="הקלידו או בחרו קוד..." autocomplete="off">
+    <datalist id="gameCodesDatalist"></datalist>
     <label>בחר סוג משחק 🎮</label>
     <select id="gameStyle">
       <option value="mario">🍄 סופר מריו</option>
@@ -423,8 +424,8 @@
   <div class="form-card">
     <label>שם</label>
     <input type="text" id="quizStudentName" placeholder="השם שלך">
-    <label>קוד משחק</label>
-    <input type="text" id="quizGameCode" placeholder="DEMO-A1">
+    <label>קוד משחק <small class="muted">(בחרו מהרשימה או חפשו את הקוד שהמורה נתן)</small></label>
+    <input type="text" id="quizGameCode" list="gameCodesDatalist" placeholder="הקלידו או בחרו קוד..." autocomplete="off">
     <button class="btn green big" onclick="startQuiz()">התחל לפתור</button>
   </div>
 </div>

@@ -42,7 +42,33 @@ window.addEventListener("DOMContentLoaded", async () => {
     console.error(e);
     alert("שגיאה בחיבור למסד הנתונים. בדוק את הגדרות Supabase ב-data.js ואת הרשאות הטבלאות.");
   }
+  populateGameCodes();     // מילוי תיבת הקודים הנפתחת (לכניסת תלמיד)
 });
+
+/* ----- מילוי תיבת הקודים הנפתחת עם כל המשחקים (חיפוש לפי קוד/שם) ----- */
+async function populateGameCodes() {
+  const list = document.getElementById("gameCodesDatalist");
+  if (!list) return;
+  let games;
+  try { games = await listGames(); }
+  catch (e) { console.error("שגיאה בטעינת רשימת הקודים", e); return; }
+
+  games.sort((a, b) => (a.gradeOrder - b.gradeOrder) || a.code.localeCompare(b.code));
+  list.innerHTML = "";
+  games.forEach(g => {
+    const opt = document.createElement("option");
+    opt.value = g.code;  // הערך שייכנס לשדה הוא הקוד עצמו
+    const parts = [g.title || g.topic || "משחק"];
+    if (g.grade) parts.push("כיתה " + g.grade);
+    if (g.subject) parts.push(g.subject);
+    opt.textContent = parts.join(" · ");  // תיאור לזיהוי המשחק ברשימה
+    list.appendChild(opt);
+  });
+}
+
+/* ----- פתיחת מסכי כניסה עם רענון רשימת הקודים ----- */
+function showStudentLogin() { populateGameCodes(); showScreen("studentLoginScreen"); }
+function showQuizOnly()     { populateGameCodes(); showScreen("quizOnlyScreen"); }
 
 /* ----- מילוי הרשימות הנפתחות -----
    במצב Supabase: הערכים הם מזהים (uuid) מהטבלאות.
