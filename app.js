@@ -1289,6 +1289,8 @@ async function startGame() {
   document.getElementById("gameTitleLabel").textContent = found.title + " — " + found.subject;
   document.getElementById("marioControls").style.display = useMarioControls ? "flex" : "none";
   document.getElementById("pacmanControls").style.display = useMarioControls ? "none" : "flex";
+  // סימון סוג הפקדים — לשמירת מקום מתאים בפלאפון מאוזן (D-pad גבוה יותר)
+  document.getElementById("marioGameScreen").classList.toggle("dpad-mode", !useMarioControls);
   const jb = document.getElementById("jumpBtn");
   if (jb) jb.textContent = (style === "bubbles") ? "🚀 ירה" : "⬆ קפיצה";
   const hints = {

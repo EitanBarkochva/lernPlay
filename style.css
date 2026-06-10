@@ -406,6 +406,47 @@ h3 { margin: 12px 0; color: #243746; }
   .acc-head { padding: 12px 14px; font-size: 17px; }
 }
 
+/* ----- פלאפון מאוזן (landscape) — בעיקר מסך המשחק ----- */
+@media (orientation: landscape) and (max-height: 500px) {
+  body { padding: 4px; }
+
+  /* מסך המשחק: שהקנבס + הפקדים ייכנסו לגובה המסך הנמוך */
+  .game-screen { max-width: 100%; }
+  .game-topbar { margin-bottom: 2px; font-size: .9rem; }
+  .game-topbar .btn-small { padding: 5px 10px; }
+  .controls-hint { display: none; }   /* חוסך גובה יקר */
+
+  /* הקנבס מוגבל בגובה כדי להשאיר מקום לפקדים מתחתיו */
+  #gameCanvas {
+    width: auto; height: auto;
+    max-width: 100%; max-height: calc(100vh - 96px);
+    margin: 0 auto; border-width: 2px; border-radius: 8px;
+  }
+  /* במשחקי D-pad הפקד גבוה יותר (3 שורות) — שומרים יותר מקום */
+  .game-screen.dpad-mode #gameCanvas { max-height: calc(100vh - 164px); }
+
+  /* פקדי מגע קומפקטיים */
+  .touch-controls { margin-top: 4px; gap: 12px; }
+  .touch-btn { width: 72px; height: 46px; font-size: 1.2rem; }
+  .touch-btn.jump { width: 110px; font-size: 1rem; }
+  .dpad {
+    margin-top: 4px;
+    grid-template-columns: repeat(3, 50px); grid-template-rows: repeat(3, 38px); gap: 5px;
+  }
+  .dpad .touch-btn { width: 50px; height: 38px; font-size: 1.2rem; }
+
+  /* כפתור הצליל מוסתר בזמן משחק כדי לא להסתיר פקדים */
+  body:has(#marioGameScreen.active) .sound-toggle { display: none; }
+
+  /* חלון השאלה שלא ייחתך במסך נמוך */
+  .modal { padding: 8px; }
+  .modal-content { max-height: 94vh; overflow-y: auto; padding: 14px 18px; }
+  .question-text { font-size: 1.15rem; margin-bottom: 10px; }
+  .answer-area { gap: 7px; }
+  .answer-option { padding: 9px; font-size: 1rem; }
+  .answer-input { padding: 10px; font-size: 1.1rem; }
+}
+
 /* ----- טוגל צליל צף ----- */
 .sound-toggle {
   position: fixed; bottom: 16px; left: 16px; z-index: 200;
