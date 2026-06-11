@@ -152,6 +152,9 @@ h3 { margin: 12px 0; color: #243746; }
   border: 2px dashed #f0c040; box-shadow: 0 3px 12px rgba(240,192,64,.2);
 }
 .demo-hint b { color: #c0392b; letter-spacing: 1px; }
+.qa-link { text-align: center; margin-top: 10px; }
+.qa-link a { color: #5a6b7a; font-weight: 600; font-size: .85rem; text-decoration: none; opacity: .8; }
+.qa-link a:hover { color: #3a78c2; text-decoration: underline; opacity: 1; }
 
 /* ----- כפתורים כלליים ----- */
 .btn {

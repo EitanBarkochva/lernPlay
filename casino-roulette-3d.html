@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>שולחן רולטה תלת-ממד</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100%; height: 100%; overflow: hidden; background: #0a0a0f; font-family: 'Segoe UI', Arial, sans-serif; }
+  #app { width: 100vw; height: 100vh; position: relative; }
+  canvas { display: block; }
+
+  #ui {
+    position: absolute; top: 16px; left: 50%; transform: translateX(-50%);
+    display: flex; flex-wrap: wrap; gap: 8px; justify-content: center;
+    padding: 10px 14px;
+    background: rgba(15, 18, 28, 0.78);
+    border: 1px solid rgba(212, 175, 55, 0.4);
+    border-radius: 14px; backdrop-filter: blur(8px);
+    box-shadow: 0 8px 30px rgba(0,0,0,0.6); z-index: 10; max-width: 94vw;
+  }
+  .btn {
+    appearance: none; border: 1px solid rgba(212, 175, 55, 0.55);
+    background: linear-gradient(180deg, #2a2f42 0%, #161a28 100%);
+    color: #f3e9c8; font-size: 14px; font-weight: 600;
+    padding: 9px 15px; border-radius: 10px; cursor: pointer;
+    transition: transform .12s ease, box-shadow .2s ease, background .2s ease; white-space: nowrap;
+  }
+  .btn:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(212,175,55,0.25); }
+  .btn.active { background: linear-gradient(180deg, #d4af37 0%, #b8902a 100%); color: #1a1208; border-color: #ffe49a; }
+  .btn.spin {
+    background: linear-gradient(180deg, #c0392b 0%, #7a1020 100%);
+    border-color: #ff8a7a; color: #fff; font-weight: 800;
+  }
+  .btn.spin:hover { box-shadow: 0 6px 18px rgba(192,57,43,0.5); }
+  .divider { width: 1px; background: rgba(212,175,55,0.3); margin: 0 4px; }
+
+  #result {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%) scale(0.7);
+    opacity: 0; pointer-events: none;
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    padding: 18px 34px; border-radius: 18px;
+    background: rgba(10,12,20,0.82); border: 2px solid #d4af37;
+    box-shadow: 0 12px 50px rgba(0,0,0,0.7); z-index: 9;
+    transition: opacity .4s ease, transform .4s ease;
+  }
+  #result.show { opacity: 1; transform: translate(-50%,-50%) scale(1); }
+  #result .num {
+    width: 92px; height: 92px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 46px; font-weight: 800; color: #fff;
+    border: 3px solid rgba(255,255,255,0.6);
+  }
+  #result .lbl { color: #f3e9c8; font-size: 16px; letter-spacing: 1px; }
+
+  #hint {
+    position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%);
+    color: rgba(243, 233, 200, 0.65); font-size: 13px;
+    background: rgba(15, 18, 28, 0.6); padding: 6px 14px; border-radius: 20px; z-index: 10; pointer-events: none;
+  }
+  #loading { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #d4af37; font-size: 18px; z-index: 20; background: #0a0a0f; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="loading">טוען שולחן רולטה…</div>
+
+  <div id="ui">
+    <button class="btn" data-view="front">חזית</button>
+    <button class="btn" data-view="wheel">מבט על הגלגל</button>
+    <button class="btn" data-view="layout">פריסת ההימורים</button>
+    <button class="btn" data-view="side">צד</button>
+    <button class="btn" data-view="orbit">סיבוב אוטומטי</button>
+    <button class="btn" data-view="top2d">תצוגת דו-ממד</button>
+    <div class="divider"></div>
+    <button class="btn spin" data-action="spin">🎯 סובב את הגלגל</button>
+  </div>
+
+  <div id="result">
+    <div class="num" id="resultNum">0</div>
+    <div class="lbl" id="resultLbl">המספר הזוכה</div>
+  </div>
+
+  <div id="hint">גרור לסיבוב · גלגלת לזום · לחץ "סובב את הגלגל" להטלת הכדור</div>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+// ===== נתוני רולטה (גלגל אירופי, אפס יחיד) =====
+const WHEEL_ORDER = [0,32,15,19,4,21,2,25,17,34,6,27,13,36,11,30,8,23,10,5,24,16,33,1,20,14,31,9,22,18,29,7,28,12,35,3,26];
+const REDS = new Set([1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36]);
+const numColor = n => n === 0 ? '#1e8c4f' : (REDS.has(n) ? '#c0392b' : '#1a1a1a');
+
+const app = document.getElementById('app');
+
+// ---------- Renderer ----------
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.0;
+app.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0a0a0f);
+scene.fog = new THREE.Fog(0x0a0a0f, 26, 60);
+
+const camera = new THREE.PerspectiveCamera(45, window.innerWidth/window.innerHeight, 0.1, 200);
+camera.position.set(0, 10, 15);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.07;
+controls.minDistance = 5;
+controls.maxDistance = 40;
+controls.maxPolarAngle = Math.PI * 0.495;
+controls.target.set(0, 1, 0);
+
+// ---------- תאורה ----------
+scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+const keyLight = new THREE.SpotLight(0xfff1cc, 220, 60, Math.PI/5, 0.5, 1.2);
+keyLight.position.set(-3, 16, 3);
+keyLight.target.position.set(-2, 1, 0);
+keyLight.castShadow = true;
+keyLight.shadow.mapSize.set(2048, 2048);
+keyLight.shadow.bias = -0.0004;
+scene.add(keyLight, keyLight.target);
+const fill = new THREE.DirectionalLight(0x88aaff, 0.25); fill.position.set(8, 6, -6); scene.add(fill);
+const rim = new THREE.DirectionalLight(0xffd27f, 0.3); rim.position.set(-6, 4, -8); scene.add(rim);
+
+// ---------- רצפה ----------
+const floor = new THREE.Mesh(
+  new THREE.PlaneGeometry(80, 80),
+  new THREE.MeshStandardMaterial({ color: 0x1a1f2e, roughness: 0.9, metalness: 0.1 })
+);
+floor.rotation.x = -Math.PI/2; floor.position.y = -2.4; floor.receiveShadow = true;
+scene.add(floor);
+
+const maxAniso = renderer.capabilities.getMaxAnisotropy();
+
+// ============================================================
+//  שולחן – מלבן מעוגל
+// ============================================================
+function roundedRectShape(w, d, r) {
+  const s = new THREE.Shape();
+  const hw = w/2, hd = d/2;
+  s.moveTo(-hw + r, -hd);
+  s.lineTo(hw - r, -hd);
+  s.quadraticCurveTo(hw, -hd, hw, -hd + r);
+  s.lineTo(hw, hd - r);
+  s.quadraticCurveTo(hw, hd, hw - r, hd);
+  s.lineTo(-hw + r, hd);
+  s.quadraticCurveTo(-hw, hd, -hw, hd - r);
+  s.lineTo(-hw, -hd + r);
+  s.quadraticCurveTo(-hw, -hd, -hw + r, -hd);
+  return s;
+}
+
+const TW = 18, TD = 9.5;
+const tableGroup = new THREE.Group();
+scene.add(tableGroup);
+
+// בד ירוק (felt) עם גרעיניות
+function makeFeltTexture() {
+  const size = 512;
+  const c = document.createElement('canvas'); c.width = c.height = size;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#0b5d2e'; ctx.fillRect(0,0,size,size);
+  const img = ctx.getImageData(0,0,size,size); const d = img.data;
+  for (let i=0;i<d.length;i+=4){ const n=(Math.random()-0.5)*16; d[i]+=n; d[i+1]+=n; d[i+2]+=n; }
+  ctx.putImageData(img,0,0);
+  const t = new THREE.CanvasTexture(c); t.wrapS=t.wrapT=THREE.RepeatWrapping; t.repeat.set(4,2);
+  t.anisotropy = maxAniso; t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+const feltGeo = new THREE.ExtrudeGeometry(roundedRectShape(TW, TD, 1.4), { depth: 0.25, bevelEnabled:false });
+feltGeo.rotateX(-Math.PI/2);
+const feltMesh = new THREE.Mesh(feltGeo, new THREE.MeshStandardMaterial({ map: makeFeltTexture(), roughness: 0.95 }));
+feltMesh.position.y = 0.9; feltMesh.receiveShadow = true; feltMesh.castShadow = true;
+tableGroup.add(feltMesh);
+
+// מסגרת עץ (מתחת לבד, נראית כמסגרת בהיקף)
+const woodMat = new THREE.MeshStandardMaterial({ color: 0x4a2c14, roughness: 0.35, metalness: 0.25 });
+const rimGeo = new THREE.ExtrudeGeometry(roundedRectShape(TW+0.8, TD+0.8, 1.6),
+  { depth: 0.55, bevelEnabled:true, bevelThickness:0.18, bevelSize:0.22, bevelSegments:4 });
+rimGeo.rotateX(-Math.PI/2);
+const rimMesh = new THREE.Mesh(rimGeo, woodMat); rimMesh.position.y = 0.36; rimMesh.castShadow = true; rimMesh.receiveShadow = true;
+tableGroup.add(rimMesh);
+
+// משענת עור בהיקף
+const padPts = roundedRectShape(TW+0.55, TD+0.55, 1.5).getPoints(160).map(p => new THREE.Vector3(p.x, 0, p.y));
+const padGeo = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(padPts, true), 260, 0.16, 12, true);
+const padMesh = new THREE.Mesh(padGeo, new THREE.MeshStandardMaterial({ color: 0x1c1c22, roughness: 0.55, metalness: 0.1 }));
+padMesh.position.y = 1.06; padMesh.castShadow = true; tableGroup.add(padMesh);
+
+// גוף השולחן
+const skirtGeo = new THREE.ExtrudeGeometry(roundedRectShape(TW+0.8, TD+0.8, 1.6), { depth: 1.6, bevelEnabled:false });
+skirtGeo.rotateX(-Math.PI/2);
+const skirt = new THREE.Mesh(skirtGeo, new THREE.MeshStandardMaterial({ color: 0x2a1a0e, roughness: 0.7, metalness: 0.15 }));
+skirt.position.y = -0.7; skirt.castShadow = true; tableGroup.add(skirt);
+
+// ============================================================
+//  פריסת ההימורים (betting layout) – טקסטורה על מישור
+// ============================================================
+function makeLayoutTexture() {
+  const W = 1500, H = 560;
+  const c = document.createElement('canvas'); c.width = W; c.height = H;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#0b5d2e'; ctx.fillRect(0,0,W,H);
+
+  function cell(x,y,w,h,fill,text,opts={}) {
+    if (fill) { ctx.fillStyle = fill; ctx.fillRect(x,y,w,h); }
+    ctx.strokeStyle = 'rgba(255,255,255,0.92)'; ctx.lineWidth = 3;
+    ctx.strokeRect(x,y,w,h);
+    if (text) {
+      ctx.fillStyle = opts.color || '#fff';
+      ctx.font = opts.font || 'bold 44px Georgia';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(text, x+w/2, y+h/2 + (opts.dy||0));
+    }
+  }
+  function diamond(cx,cy,r,color){ ctx.fillStyle=color; ctx.beginPath();
+    ctx.moveTo(cx,cy-r); ctx.lineTo(cx+r,cy); ctx.lineTo(cx,cy+r); ctx.lineTo(cx-r,cy); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle='rgba(255,255,255,0.9)'; ctx.lineWidth=3; ctx.stroke(); }
+
+  const gx = 90, colW = 100, rowH = 120;
+  // אפס
+  cell(0,0,gx,rowH*3,'#1e8c4f','0');
+  // רשת 1..36
+  for (let col=1; col<=12; col++) {
+    const x = gx + (col-1)*colW;
+    const nums = [col*3, col*3-1, col*3-2]; // עליון, אמצעי, תחתון
+    nums.forEach((n,r) => cell(x, r*rowH, colW, rowH, numColor(n), String(n)));
+  }
+  // עמודות 2 to 1
+  const colX = gx + 12*colW;
+  for (let r=0;r<3;r++) cell(colX, r*rowH, 110, rowH, '#0b5d2e', '2 to 1', {font:'bold 30px Georgia'});
+  // תריסרים
+  const dz = ['1st 12','2nd 12','3rd 12'];
+  for (let d=0; d<3; d++) cell(gx + d*(12*colW/3), rowH*3, 12*colW/3, 80, '#0b5d2e', dz[d], {font:'bold 34px Georgia'});
+  // הימורי חוץ
+  const oy = rowH*3 + 80, ow = 12*colW/6, oh = H - oy;
+  cell(gx + 0*ow, oy, ow, oh, '#0b5d2e', '1-18', {font:'bold 36px Georgia'});
+  cell(gx + 1*ow, oy, ow, oh, '#0b5d2e', 'EVEN', {font:'bold 32px Georgia'});
+  cell(gx + 2*ow, oy, ow, oh, '#0b5d2e', '');  diamond(gx+2.5*ow, oy+oh/2, 28, '#c0392b');
+  cell(gx + 3*ow, oy, ow, oh, '#0b5d2e', '');  diamond(gx+3.5*ow, oy+oh/2, 28, '#1a1a1a');
+  cell(gx + 4*ow, oy, ow, oh, '#0b5d2e', 'ODD', {font:'bold 34px Georgia'});
+  cell(gx + 5*ow, oy, ow, oh, '#0b5d2e', '19-36', {font:'bold 36px Georgia'});
+
+  const t = new THREE.CanvasTexture(c);
+  t.anisotropy = maxAniso; t.colorSpace = THREE.SRGBColorSpace;
+  return { tex: t, aspect: W/H };
+}
+const layout = makeLayoutTexture();
+const layoutW = 9.2, layoutH = layoutW / layout.aspect;
+const layoutMesh = new THREE.Mesh(
+  new THREE.PlaneGeometry(layoutW, layoutH),
+  new THREE.MeshStandardMaterial({ map: layout.tex, roughness: 0.9, transparent: true })
+);
+layoutMesh.rotation.x = -Math.PI/2;
+layoutMesh.position.set(2.6, 1.151, 0);     // ה-0 יוצא בצד שמאל, לכיוון הגלגל
+tableGroup.add(layoutMesh);
+
+// ============================================================
+//  גלגל הרולטה
+// ============================================================
+const WHEEL_X = -5.2, WHEEL_Y = 1.15;
+const wheel = new THREE.Group();
+wheel.position.set(WHEEL_X, WHEEL_Y, 0);
+tableGroup.add(wheel);
+
+// בסיס/קערה חיצונית (סטטי) – Lathe
+function bowlProfile() {
+  return [
+    new THREE.Vector2(1.50, 0.00),
+    new THREE.Vector2(1.55, -0.02),
+    new THREE.Vector2(1.72, 0.05),
+    new THREE.Vector2(1.95, 0.20),  // מסילת הכדור
+    new THREE.Vector2(2.18, 0.42),
+    new THREE.Vector2(2.40, 0.58),
+    new THREE.Vector2(2.55, 0.60),
+  ];
+}
+const bowl = new THREE.Mesh(
+  new THREE.LatheGeometry(bowlProfile(), 96),
+  new THREE.MeshStandardMaterial({ color: 0x2a1206, roughness: 0.4, metalness: 0.3, side: THREE.DoubleSide })
+);
+bowl.receiveShadow = true; bowl.castShadow = true; wheel.add(bowl);
+
+// טבעת עץ חיצונית מלוטשת
+const outerRim = new THREE.Mesh(
+  new THREE.TorusGeometry(2.5, 0.16, 16, 96),
+  new THREE.MeshStandardMaterial({ color: 0x5a3418, roughness: 0.25, metalness: 0.35 })
+);
+outerRim.rotation.x = Math.PI/2; outerRim.position.y = 0.59; outerRim.castShadow = true; wheel.add(outerRim);
+
+// בסיס תחתון להסתרה
+const wheelBase = new THREE.Mesh(
+  new THREE.CylinderGeometry(2.55, 2.7, 0.5, 64),
+  new THREE.MeshStandardMaterial({ color: 0x1a0d05, roughness: 0.6 })
+);
+wheelBase.position.y = -0.25; wheelBase.castShadow = true; wheel.add(wheelBase);
+
+// דפלקטורים (מעצורי כדור) על המסילה
+const deflMat = new THREE.MeshStandardMaterial({ color: 0xb8b8c0, roughness: 0.3, metalness: 0.8 });
+for (let i=0;i<8;i++){
+  const d = new THREE.Mesh(new THREE.CapsuleGeometry(0.05, 0.22, 4, 8), deflMat);
+  const a = (i/8)*Math.PI*2;
+  d.position.set(Math.cos(a)*1.78, 0.16, Math.sin(a)*1.78);
+  d.rotation.y = -a; d.rotation.z = Math.PI/2;
+  wheel.add(d);
+}
+
+// ---- הרוטור המסתובב ----
+const rotor = new THREE.Group();
+wheel.add(rotor);
+
+// לוחית הרוטור
+const rotorPlate = new THREE.Mesh(
+  new THREE.CylinderGeometry(1.5, 1.5, 0.08, 96),
+  new THREE.MeshStandardMaterial({ color: 0x140a04, roughness: 0.5, metalness: 0.3 })
+);
+rotorPlate.position.y = 0.02; rotorPlate.castShadow = true; rotor.add(rotorPlate);
+
+// טבעת המספרים – טקסטורה
+function makeNumberRingTexture() {
+  const S = 1024, c = document.createElement('canvas'); c.width=c.height=S;
+  const ctx = c.getContext('2d'); const cx=S/2, cy=S/2;
+  const outerR = 512, innerR = Math.round(512 * (0.98/1.5)); // תואם RingGeometry(0.98,1.5)
+  const N = WHEEL_ORDER.length, step = Math.PI*2/N;
+  for (let i=0;i<N;i++){
+    const n = WHEEL_ORDER[i];
+    const a0 = i*step - Math.PI/2, a1 = (i+1)*step - Math.PI/2;
+    ctx.beginPath();
+    ctx.arc(cx,cy,outerR,a0,a1); ctx.arc(cx,cy,innerR,a1,a0,true); ctx.closePath();
+    ctx.fillStyle = numColor(n); ctx.fill();
+    ctx.strokeStyle = 'rgba(212,175,55,0.85)'; ctx.lineWidth = 3; ctx.stroke();
+    // מספר
+    const am = (a0+a1)/2, tr = (outerR+innerR)/2;
+    ctx.save();
+    ctx.translate(cx + Math.cos(am)*tr, cy + Math.sin(am)*tr);
+    ctx.rotate(am + Math.PI/2);
+    ctx.fillStyle = '#fff'; ctx.font = 'bold 52px Georgia';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(String(n), 0, 0);
+    ctx.restore();
+  }
+  const t = new THREE.CanvasTexture(c); t.anisotropy = maxAniso; t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+const numberRing = new THREE.Mesh(
+  new THREE.RingGeometry(0.98, 1.5, 96, 1),
+  new THREE.MeshStandardMaterial({ map: makeNumberRingTexture(), roughness: 0.45, metalness: 0.15, side: THREE.DoubleSide })
+);
+numberRing.rotation.x = -Math.PI/2; numberRing.position.y = 0.065; rotor.add(numberRing);
+
+// פרטים (frets) – מחיצות הכיסים
+const fretMat = new THREE.MeshStandardMaterial({ color: 0xcfcfd6, roughness: 0.3, metalness: 0.7 });
+const N = WHEEL_ORDER.length, step = Math.PI*2/N;
+for (let i=0;i<N;i++){
+  const a = i*step - Math.PI/2;
+  const fret = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.06, 0.03), fretMat);
+  fret.position.set(Math.cos(a)*1.24, 0.075, Math.sin(a)*1.24);
+  fret.rotation.y = -a; fret.castShadow = true; rotor.add(fret);
+}
+
+// קונוס מרכזי (turret)
+const cone = new THREE.Mesh(
+  new THREE.ConeGeometry(0.5, 0.55, 48),
+  new THREE.MeshStandardMaterial({ color: 0x3a2410, roughness: 0.3, metalness: 0.4 })
+);
+cone.position.y = 0.33; cone.castShadow = true; rotor.add(cone);
+const spindle = new THREE.Mesh(
+  new THREE.CylinderGeometry(0.06, 0.08, 0.7, 24),
+  new THREE.MeshStandardMaterial({ color: 0xd4af37, roughness: 0.2, metalness: 0.95 })
+);
+spindle.position.y = 0.7; rotor.add(spindle);
+const knob = new THREE.Mesh(new THREE.SphereGeometry(0.13, 24, 24),
+  new THREE.MeshStandardMaterial({ color: 0xd4af37, roughness: 0.2, metalness: 0.95 }));
+knob.position.y = 1.0; rotor.add(knob);
+// ידית-צלב
+const handleMat = new THREE.MeshStandardMaterial({ color: 0xe8c659, roughness: 0.25, metalness: 0.9 });
+for (let i=0;i<2;i++){
+  const bar = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 1.5, 16), handleMat);
+  bar.rotation.z = Math.PI/2; bar.rotation.y = i*Math.PI/2; bar.position.y = 0.78; rotor.add(bar);
+}
+
+// הכדור (חופשי, ממוקם ידנית)
+const ball = new THREE.Mesh(
+  new THREE.SphereGeometry(0.075, 24, 24),
+  new THREE.MeshStandardMaterial({ color: 0xf7f7f0, roughness: 0.15, metalness: 0.1 })
+);
+ball.castShadow = true; wheel.add(ball);
+
+// ============================================================
+//  ז'יטונים על הפריסה (קישוט)
+// ============================================================
+function makeChip(color, edge) {
+  const g = new THREE.Group();
+  const body = new THREE.Mesh(new THREE.CylinderGeometry(0.34,0.34,0.1,40),
+    new THREE.MeshStandardMaterial({ color, roughness: 0.45 }));
+  body.castShadow = true; g.add(body);
+  const eMat = new THREE.MeshStandardMaterial({ color: edge||0xffffff, roughness: 0.4 });
+  for (let i=0;i<8;i++){ const s=new THREE.Mesh(new THREE.BoxGeometry(0.1,0.105,0.13),eMat);
+    const a=(i/8)*Math.PI*2; s.position.set(Math.cos(a)*0.33,0,Math.sin(a)*0.33); s.rotation.y=-a; g.add(s); }
+  return g;
+}
+function chipStack(x,z,n,col,edge){ const g=new THREE.Group();
+  for(let i=0;i<n;i++){ const ch=makeChip(col,edge); ch.position.y=0.05+i*0.1; ch.rotation.y=Math.random(); g.add(ch); }
+  g.position.set(x,1.155,z); tableGroup.add(g); }
+chipStack(1.1, -1.4, 4, 0xc0392b, 0xffffff);
+chipStack(3.4, 0.8, 5, 0x2c3e50, 0xffffff);
+chipStack(4.6, -1.1, 3, 0x111111, 0xd4af37);
+chipStack(2.0, 1.6, 6, 0x27632a, 0xf3e9c8);
+
+// מחזיק ז'יטונים של הקרופייה
+const trayGroup = new THREE.Group();
+const trayMat = new THREE.MeshStandardMaterial({ color: 0x3a3a40, roughness: 0.35, metalness: 0.6 });
+trayGroup.add(new THREE.Mesh(new THREE.BoxGeometry(3.0,0.22,0.85), trayMat));
+const trayCols = [[0xc0392b,0xfff],[0x2c3e50,0xfff],[0x27632a,0xf3e9c8],[0x111111,0xd4af37],[0xf3f3f3,0xc0392b]];
+for(let r=0;r<5;r++){ const [c,e]=trayCols[r];
+  for(let i=0;i<6;i++){ const ch=makeChip(c,e); ch.rotation.x=Math.PI/2;
+    ch.position.set(-1.2+r*0.6,0.16,-0.28+i*0.11); trayGroup.add(ch);} }
+trayGroup.position.set(-1.4, 1.155, 3.3); tableGroup.add(trayGroup);
+
+// ============================================================
+//  מצב דו-ממד
+// ============================================================
+let is2D = false;
+const ortho = new THREE.OrthographicCamera(-12,12,8,-8,0.1,100);
+ortho.position.set(0, 24, 0.001); ortho.lookAt(0, 1, 0);
+function setOrthoFrustum(){ const a=window.innerWidth/window.innerHeight; const h=6.2;
+  ortho.left=-h*a; ortho.right=h*a; ortho.top=h; ortho.bottom=-h; ortho.updateProjectionMatrix(); }
+setOrthoFrustum();
+
+// ============================================================
+//  זוויות מצלמה
+// ============================================================
+let orbitMode = false, anim = null;
+const views = {
+  front:  { pos:new THREE.Vector3(0, 10, 15),   tgt:new THREE.Vector3(0, 1, 0) },
+  wheel:  { pos:new THREE.Vector3(-5.2, 5.5, 5), tgt:new THREE.Vector3(-5.2, 1.4, 0) },
+  layout: { pos:new THREE.Vector3(2.6, 9, 7.5),  tgt:new THREE.Vector3(2.6, 1, 0) },
+  side:   { pos:new THREE.Vector3(15, 7, 0.5),   tgt:new THREE.Vector3(0, 1, 0) },
+};
+function flyTo(v){ is2D=false; orbitMode=false; const t=views[v];
+  anim={fromPos:camera.position.clone(),toPos:t.pos.clone(),fromTgt:controls.target.clone(),toTgt:t.tgt.clone(),t:0,dur:1.0}; }
+const easeInOut = t => t<0.5 ? 2*t*t : 1-Math.pow(-2*t+2,2)/2;
+
+// ============================================================
+//  אנימציית הסיבוב
+// ============================================================
+let rotorAngle = 0, ballAngle = 0, ballRadius = 1.18, ballY = 0.12;
+const spin = { phase: 'idle', t: 0, dur: 6.5, rotorV0: 7, ballV0: -13, landing: 0 };
+
+function trackY(r){ // גובה הכדור לפי הרדיוס (מסילה גבוהה, כיס נמוך)
+  const t = (r - 1.18) / (2.0 - 1.18);
+  return 0.12 + Math.max(0, Math.min(1, t)) * (0.30 - 0.12);
+}
+
+const resultEl = document.getElementById('result');
+const resultNum = document.getElementById('resultNum');
+const resultLbl = document.getElementById('resultLbl');
+function showResult(n){
+  resultNum.textContent = n;
+  resultNum.style.background = numColor(n);
+  resultLbl.textContent = n === 0 ? 'אפס — ירוק' : (REDS.has(n) ? 'אדום' : 'שחור');
+  resultEl.classList.add('show');
+}
+function startSpin(){
+  if (spin.phase === 'spin') return;
+  resultEl.classList.remove('show');
+  spin.phase = 'spin'; spin.t = 0;
+  spin.rotorV0 = 6 + Math.random()*2;
+  spin.ballV0 = -(12 + Math.random()*3);
+  ballRadius = 2.0;
+}
+
+function updateSpin(dt){
+  const TWO = Math.PI*2;
+  if (spin.phase === 'spin') {
+    spin.t += dt;
+    const p = Math.min(spin.t / spin.dur, 1);
+    const rotorVel = spin.rotorV0 * (1-p) + 0.25;
+    const ballVel  = spin.ballV0 * Math.pow(1-p, 1.4);
+    rotorAngle += rotorVel * dt;
+    ballAngle  += ballVel  * dt;
+    if (p < 0.55) ballRadius = 2.0;
+    else { const q = (p-0.55)/0.45; ballRadius = 2.0 - easeInOut(q)*(2.0-1.18); }
+    ballY = trackY(ballRadius);
+    if (spin.t >= spin.dur) {
+      const rel = ((ballAngle - rotorAngle) % TWO + TWO) % TWO;
+      const idx = Math.round(rel / step) % N;
+      spin.landing = idx;
+      ballAngle = rotorAngle + idx*step;
+      ballRadius = 1.18; ballY = 0.13;
+      spin.phase = 'rest';
+      showResult(WHEEL_ORDER[idx]);
+    }
+  } else if (spin.phase === 'rest') {
+    rotorAngle += 0.25 * dt;
+    ballAngle = rotorAngle + spin.landing*step;
+    ballRadius = 1.18; ballY = 0.13;
+  } else { // idle
+    rotorAngle += 0.3 * dt;
+    ballAngle = rotorAngle;
+    ballRadius = 1.18; ballY = 0.13;
+  }
+  rotor.rotation.y = rotorAngle;
+  const a = ballAngle - Math.PI/2; // התאמה לאוריינטציית הטבעת
+  ball.position.set(Math.cos(a)*ballRadius, ballY, Math.sin(a)*ballRadius);
+}
+
+// ============================================================
+//  כפתורים
+// ============================================================
+const buttons = document.querySelectorAll('.btn[data-view]');
+buttons.forEach(b => b.addEventListener('click', () => {
+  buttons.forEach(x => x.classList.remove('active')); b.classList.add('active');
+  const v = b.dataset.view;
+  if (v === 'orbit') { orbitMode = true; is2D = false; anim = null; }
+  else if (v === 'top2d') { is2D = true; orbitMode = false; anim = null; setOrthoFrustum(); }
+  else flyTo(v);
+}));
+document.querySelector('[data-action="spin"]').addEventListener('click', startSpin);
+
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth/window.innerHeight; camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight); setOrthoFrustum();
+});
+
+// ============================================================
+//  לולאת רינדור
+// ============================================================
+const clock = new THREE.Clock();
+let orbitAngle = 0;
+function animate(){
+  requestAnimationFrame(animate);
+  const dt = Math.min(clock.getDelta(), 0.05);
+  updateSpin(dt);
+
+  if (anim) {
+    anim.t += dt / anim.dur; const k = easeInOut(Math.min(anim.t,1));
+    camera.position.lerpVectors(anim.fromPos, anim.toPos, k);
+    controls.target.lerpVectors(anim.fromTgt, anim.toTgt, k);
+    if (anim.t >= 1) anim = null;
+  }
+  if (orbitMode && !anim) {
+    orbitAngle += dt * 0.22; const r = 16, h = 9;
+    camera.position.set(Math.cos(orbitAngle)*r, h, Math.sin(orbitAngle)*r);
+    controls.target.set(0, 1, 0);
+  }
+  controls.update();
+  renderer.render(scene, is2D ? ortho : camera);
+}
+
+document.getElementById('loading').style.display = 'none';
+document.querySelector('[data-view="front"]').classList.add('active');
+animate();
+</script>
+</body>
+</html>

@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>שולחן קזינו תלת-ממד</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100%; height: 100%; overflow: hidden; background: #0a0a0f; font-family: 'Segoe UI', Arial, sans-serif; }
+  #app { width: 100vw; height: 100vh; position: relative; }
+  canvas { display: block; }
+
+  /* פאנל הכפתורים */
+  #ui {
+    position: absolute;
+    top: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    padding: 10px 14px;
+    background: rgba(15, 18, 28, 0.78);
+    border: 1px solid rgba(212, 175, 55, 0.4);
+    border-radius: 14px;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 8px 30px rgba(0,0,0,0.6);
+    z-index: 10;
+    max-width: 94vw;
+  }
+  .btn {
+    appearance: none;
+    border: 1px solid rgba(212, 175, 55, 0.55);
+    background: linear-gradient(180deg, #2a2f42 0%, #161a28 100%);
+    color: #f3e9c8;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 9px 15px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: transform .12s ease, box-shadow .2s ease, background .2s ease;
+    white-space: nowrap;
+  }
+  .btn:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(212,175,55,0.25); }
+  .btn:active { transform: translateY(0); }
+  .btn.active {
+    background: linear-gradient(180deg, #d4af37 0%, #b8902a 100%);
+    color: #1a1208;
+    border-color: #ffe49a;
+  }
+  .divider { width: 1px; background: rgba(212,175,55,0.3); margin: 0 4px; }
+
+  #hint {
+    position: absolute;
+    bottom: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: rgba(243, 233, 200, 0.65);
+    font-size: 13px;
+    background: rgba(15, 18, 28, 0.6);
+    padding: 6px 14px;
+    border-radius: 20px;
+    z-index: 10;
+    pointer-events: none;
+  }
+  #loading {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    color: #d4af37; font-size: 18px; z-index: 20;
+    background: #0a0a0f;
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="loading">טוען שולחן קזינו…</div>
+
+  <div id="ui">
+    <button class="btn" data-view="front">חזית</button>
+    <button class="btn" data-view="dealer">עמדת דילר</button>
+    <button class="btn" data-view="player">עמדת שחקן</button>
+    <button class="btn" data-view="side">צד</button>
+    <button class="btn" data-view="orbit">סיבוב אוטומטי</button>
+    <div class="divider"></div>
+    <button class="btn" data-view="top2d">תצוגת דו-ממד</button>
+  </div>
+
+  <div id="hint">גרור עם העכבר לסיבוב · גלגלת לזום · או בחר זווית מהכפתורים</div>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const app = document.getElementById('app');
+
+// ---------- Renderer ----------
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.0;
+app.appendChild(renderer.domElement);
+
+// ---------- Scene ----------
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0a0a0f);
+scene.fog = new THREE.Fog(0x0a0a0f, 18, 40);
+
+// ---------- Camera ----------
+const camera = new THREE.PerspectiveCamera(45, window.innerWidth/window.innerHeight, 0.1, 200);
+camera.position.set(0, 9, 11);
+
+// ---------- Controls ----------
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.07;
+controls.minDistance = 5;
+controls.maxDistance = 28;
+controls.maxPolarAngle = Math.PI * 0.495; // לא לרדת מתחת לשולחן
+controls.target.set(0, 0.9, 0);
+
+// ============================================================
+//  תאורה
+// ============================================================
+const ambient = new THREE.AmbientLight(0xffffff, 0.55);
+scene.add(ambient);
+
+// תאורת "מנורת קזינו" מעל השולחן
+const keyLight = new THREE.SpotLight(0xfff1cc, 160, 45, Math.PI/5, 0.5, 1.2);
+keyLight.position.set(0, 14, 2);
+keyLight.target.position.set(0, 0.9, 0);
+keyLight.castShadow = true;
+keyLight.shadow.mapSize.set(2048, 2048);
+keyLight.shadow.bias = -0.0004;
+keyLight.shadow.camera.near = 2;
+keyLight.shadow.camera.far = 40;
+scene.add(keyLight);
+scene.add(keyLight.target);
+
+const fillLight = new THREE.DirectionalLight(0x88aaff, 0.25);
+fillLight.position.set(-8, 6, -6);
+scene.add(fillLight);
+
+const rimLight = new THREE.DirectionalLight(0xffd27f, 0.3);
+rimLight.position.set(6, 4, -8);
+scene.add(rimLight);
+
+// ============================================================
+//  רצפה
+// ============================================================
+const floorGeo = new THREE.PlaneGeometry(60, 60);
+const floorMat = new THREE.MeshStandardMaterial({ color: 0x1a1f2e, roughness: 0.9, metalness: 0.1 });
+const floor = new THREE.Mesh(floorGeo, floorMat);
+floor.rotation.x = -Math.PI/2;
+floor.position.y = -2.4;
+floor.receiveShadow = true;
+scene.add(floor);
+
+// ============================================================
+//  בד הפלדה (felt) – טקסטורה פרוצדורלית
+// ============================================================
+function makeFeltTexture() {
+  const size = 1024;
+  const c = document.createElement('canvas');
+  c.width = c.height = size;
+  const ctx = c.getContext('2d');
+  // בסיס ירוק קזינו
+  ctx.fillStyle = '#0b5d2e';
+  ctx.fillRect(0, 0, size, size);
+  // גרעיניות עדינה של בד
+  const img = ctx.getImageData(0, 0, size, size);
+  const d = img.data;
+  for (let i = 0; i < d.length; i += 4) {
+    const n = (Math.random() - 0.5) * 18;
+    d[i]   = Math.max(0, Math.min(255, d[i]   + n));
+    d[i+1] = Math.max(0, Math.min(255, d[i+1] + n));
+    d[i+2] = Math.max(0, Math.min(255, d[i+2] + n));
+  }
+  ctx.putImageData(img, 0, 0);
+
+  // קשתות "BLACKJACK PAYS 3 TO 2" ועיטורי זהב
+  ctx.translate(size/2, size/2);
+  // קשת חצי-עיגול עליונה (אזור הדילר)
+  ctx.strokeStyle = 'rgba(243,233,200,0.85)';
+  ctx.lineWidth = 6;
+  ctx.beginPath();
+  ctx.arc(0, -40, size*0.42, Math.PI*0.12, Math.PI*0.88, false);
+  ctx.stroke();
+
+  ctx.strokeStyle = 'rgba(212,175,55,0.9)';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.arc(0, -40, size*0.44, Math.PI*0.10, Math.PI*0.90, false);
+  ctx.stroke();
+
+  // טקסט מעוקל
+  ctx.fillStyle = 'rgba(243,233,200,0.92)';
+  ctx.font = 'bold 46px Georgia';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  const text = 'BLACKJACK  PAYS  3  TO  2';
+  const radius = size*0.30;
+  const startAngle = -Math.PI*0.78;
+  const endAngle = -Math.PI*0.22;
+  for (let i = 0; i < text.length; i++) {
+    const t = i / (text.length - 1);
+    const a = startAngle + (endAngle - startAngle) * t;
+    const x = Math.cos(a) * radius;
+    const y = Math.sin(a) * radius - 40;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(a + Math.PI/2);
+    ctx.fillText(text[i], 0, 0);
+    ctx.restore();
+  }
+
+  ctx.fillStyle = 'rgba(243,233,200,0.7)';
+  ctx.font = 'italic 26px Georgia';
+  ctx.fillText('INSURANCE  PAYS  2  TO  1', 0, size*0.06);
+
+  // שבע עמדות הימור (מעגלים)
+  for (let i = 0; i < 7; i++) {
+    const a = -Math.PI*0.78 + (Math.PI*0.56) * (i/6);
+    const r = size*0.40;
+    const x = Math.cos(a) * r;
+    const y = Math.sin(a) * r - 30;
+    ctx.beginPath();
+    ctx.arc(x, y, 34, 0, Math.PI*2);
+    ctx.strokeStyle = 'rgba(212,175,55,0.85)';
+    ctx.lineWidth = 4;
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(x, y, 28, 0, Math.PI*2);
+    ctx.strokeStyle = 'rgba(243,233,200,0.5)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+
+  const tex = new THREE.CanvasTexture(c);
+  tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  tex.colorSpace = THREE.SRGBColorSpace;
+  // היפוך אופקי כדי שהכיתוב לא יופיע כתמונת-מראה במיפוי ה-UV
+  tex.wrapS = THREE.RepeatWrapping;
+  tex.repeat.x = -1;
+  tex.offset.x = 1;
+  return tex;
+}
+
+const feltTex = makeFeltTexture();
+
+// ============================================================
+//  גוף השולחן – צורת חצי-גורן (כמו שולחן בלקג'ק אמיתי)
+// ============================================================
+const tableGroup = new THREE.Group();
+scene.add(tableGroup);
+
+// בונים צורת D מעוגלת באמצעות Shape
+function makeTableShape(w, d, r) {
+  const s = new THREE.Shape();
+  const hw = w/2;
+  // צד ישר (קשת הדילר) למעלה, צד מעוגל לשחקנים
+  s.moveTo(-hw, -d*0.15);
+  s.lineTo(-hw, d*0.0);
+  // קשת חצי עיגול לכיוון השחקנים
+  s.absarc(0, 0, hw, Math.PI, 0, true);
+  s.lineTo(hw, -d*0.15);
+  // צד הדילר (קצת מעוגל)
+  s.quadraticCurveTo(0, -d*0.42, -hw, -d*0.15);
+  return s;
+}
+
+const tableShape = makeTableShape(8, 8, 1);
+
+// משטח הבד (extrude דק)
+const feltGeo = new THREE.ExtrudeGeometry(tableShape, { depth: 0.25, bevelEnabled: false });
+feltGeo.rotateX(-Math.PI/2);
+// UV mapping פשוט עבור הטקסטורה
+feltGeo.computeBoundingBox();
+const bb = feltGeo.boundingBox;
+const uvAttr = feltGeo.attributes.uv;
+const posAttr = feltGeo.attributes.position;
+for (let i = 0; i < posAttr.count; i++) {
+  const x = posAttr.getX(i), z = posAttr.getZ(i);
+  uvAttr.setXY(i, (x - bb.min.x)/(bb.max.x - bb.min.x), (z - bb.min.z)/(bb.max.z - bb.min.z));
+}
+uvAttr.needsUpdate = true;
+
+const feltMat = new THREE.MeshStandardMaterial({ map: feltTex, roughness: 0.95, metalness: 0.0 });
+const feltMesh = new THREE.Mesh(feltGeo, feltMat);
+feltMesh.position.y = 0.9;
+feltMesh.castShadow = true;
+feltMesh.receiveShadow = true;
+tableGroup.add(feltMesh);
+
+// מסגרת עץ מהגוני מסביב (rim) – משטח מלא, מעט גדול יותר, יושב מתחת לבד
+// כך הבד (קטן יותר) מכסה את המרכז והעץ נראה רק כמסגרת בהיקף — בלי "חור" שביר.
+const rimShape = makeTableShape(8.7, 8.7, 1);
+const rimGeo = new THREE.ExtrudeGeometry(rimShape, { depth: 0.55, bevelEnabled: true, bevelThickness: 0.18, bevelSize: 0.22, bevelSegments: 4 });
+rimGeo.rotateX(-Math.PI/2);
+const woodMat = new THREE.MeshStandardMaterial({ color: 0x4a2c14, roughness: 0.35, metalness: 0.25 });
+const rimMesh = new THREE.Mesh(rimGeo, woodMat);
+rimMesh.position.y = 0.36; // טופ ≈ 1.13, מעט מתחת לטופ הבד (1.15)
+rimMesh.castShadow = true;
+rimMesh.receiveShadow = true;
+tableGroup.add(rimMesh);
+
+// פס ריפוד עור (armrest) על שפת העץ
+const padShape = makeTableShape(8.7, 8.7, 1);
+const padTube = new THREE.Mesh(
+  new THREE.TorusGeometry(0.01, 0.01, 8, 8), // placeholder; נשתמש בצינור לאורך המתאר
+  woodMat
+);
+// צינור עור לאורך מתאר השולחן
+const padPts = makeTableShape(8.55, 8.55, 1).getPoints(120).map(p => new THREE.Vector3(p.x, 0, p.y));
+const padCurve = new THREE.CatmullRomCurve3(padPts, true);
+const padGeo = new THREE.TubeGeometry(padCurve, 200, 0.16, 12, true);
+padGeo.rotateX(0);
+const leatherMat = new THREE.MeshStandardMaterial({ color: 0x1c1c22, roughness: 0.55, metalness: 0.1 });
+const padMesh = new THREE.Mesh(padGeo, leatherMat);
+padMesh.position.y = 1.06;
+padMesh.castShadow = true;
+tableGroup.add(padMesh);
+
+// גוף/דופן השולחן (skirt) מתחת למשטח
+const skirtShape = makeTableShape(8.7, 8.7, 1);
+const skirtGeo = new THREE.ExtrudeGeometry(skirtShape, { depth: 1.6, bevelEnabled: false });
+skirtGeo.rotateX(-Math.PI/2);
+const skirtMat = new THREE.MeshStandardMaterial({ color: 0x2a1a0e, roughness: 0.7, metalness: 0.15 });
+const skirtMesh = new THREE.Mesh(skirtGeo, skirtMat);
+skirtMesh.position.y = -0.7; // ה-extrude יוצא כלפי מעלה, אז ממקמים נמוך כדי שהגוף יהיה מתחת לבד (טופ ≈ 0.9)
+skirtMesh.castShadow = true;
+tableGroup.add(skirtMesh);
+
+// ============================================================
+//  ז'יטונים (chips)
+// ============================================================
+function makeChip(color, edgeColor) {
+  const g = new THREE.Group();
+  const bodyMat = new THREE.MeshStandardMaterial({ color, roughness: 0.45, metalness: 0.1 });
+  const body = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.12, 48), bodyMat);
+  body.castShadow = true; body.receiveShadow = true;
+  g.add(body);
+  // פסי קצה לבנים
+  const edgeMat = new THREE.MeshStandardMaterial({ color: edgeColor || 0xffffff, roughness: 0.4 });
+  for (let i = 0; i < 8; i++) {
+    const seg = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.125, 0.16), edgeMat);
+    const a = (i/8) * Math.PI*2;
+    seg.position.set(Math.cos(a)*0.41, 0, Math.sin(a)*0.41);
+    seg.rotation.y = -a;
+    g.add(seg);
+  }
+  // טבעת עליונה
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(0.30, 0.025, 12, 40), edgeMat);
+  ring.rotation.x = Math.PI/2;
+  ring.position.y = 0.061;
+  g.add(ring);
+  return g;
+}
+
+const chipColors = [
+  [0xc0392b, 0xffffff], // אדום
+  [0x2c3e50, 0xffffff], // כחול כהה
+  [0x27632a, 0xf3e9c8], // ירוק
+  [0x111111, 0xd4af37], // שחור-זהב
+  [0xf3f3f3, 0xc0392b], // לבן
+];
+
+function makeChipStack(x, z, count, colorIdx) {
+  const stack = new THREE.Group();
+  const [c, e] = chipColors[colorIdx % chipColors.length];
+  for (let i = 0; i < count; i++) {
+    const chip = makeChip(c, e);
+    chip.position.set(0, 0.06 + i*0.12, 0);
+    chip.rotation.y = Math.random()*0.4;
+    stack.add(chip);
+  }
+  stack.position.set(x, 0.9 + 0.13, z);
+  tableGroup.add(stack);
+  return stack;
+}
+
+makeChipStack(-2.6, 1.6, 6, 0);
+makeChipStack(-2.1, 1.9, 4, 2);
+makeChipStack(2.5, 1.7, 5, 1);
+makeChipStack(2.0, 2.0, 7, 3);
+makeChipStack(0.4, 2.6, 3, 4);
+makeChipStack(-0.5, 2.5, 5, 0);
+
+// ז'יטון בודד "מהמר"
+const lone = makeChip(chipColors[3][0], chipColors[3][1]);
+lone.position.set(1.2, 0.9 + 0.13, 2.3);
+tableGroup.add(lone);
+
+// ============================================================
+//  קלפים
+// ============================================================
+function makeCardTexture(rank, suit, isRed) {
+  const c = document.createElement('canvas');
+  c.width = 256; c.height = 358;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#fdfdf8';
+  ctx.fillRect(0,0,256,358);
+  ctx.strokeStyle = '#ddd'; ctx.lineWidth = 4;
+  ctx.strokeRect(4,4,248,350);
+  ctx.fillStyle = isRed ? '#c0392b' : '#1a1a1a';
+  ctx.font = 'bold 56px Georgia';
+  ctx.textAlign = 'left';
+  ctx.fillText(rank, 16, 64);
+  ctx.font = '52px Georgia';
+  ctx.fillText(suit, 18, 118);
+  ctx.textAlign = 'center';
+  ctx.font = '150px Georgia';
+  ctx.fillText(suit, 128, 220);
+  ctx.save();
+  ctx.translate(256,358); ctx.rotate(Math.PI);
+  ctx.textAlign = 'left';
+  ctx.font = 'bold 56px Georgia';
+  ctx.fillText(rank, 16, 64);
+  ctx.font = '52px Georgia';
+  ctx.fillText(suit, 18, 118);
+  ctx.restore();
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  return t;
+}
+function makeCardBackTexture() {
+  const c = document.createElement('canvas');
+  c.width = 256; c.height = 358;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#7a1020'; ctx.fillRect(0,0,256,358);
+  ctx.fillStyle = '#9a2238';
+  for (let y=0; y<358; y+=16) for (let x=0; x<256; x+=16) {
+    if (((x+y)/16)%2===0) { ctx.fillRect(x,y,16,16); }
+  }
+  ctx.strokeStyle = '#d4af37'; ctx.lineWidth = 6;
+  ctx.strokeRect(12,12,232,334);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+
+const cardBack = makeCardBackTexture();
+function makeCard(rank, suit, isRed) {
+  const face = makeCardTexture(rank, suit, isRed);
+  const sideMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.6 });
+  const mats = [sideMat, sideMat,
+    new THREE.MeshStandardMaterial({ map: face, roughness: 0.5 }),
+    new THREE.MeshStandardMaterial({ map: cardBack, roughness: 0.5 }),
+    sideMat, sideMat];
+  const card = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.012, 1.26), mats);
+  card.castShadow = true; card.receiveShadow = true;
+  return card;
+}
+
+// יד הדילר
+function placeCard(rank, suit, isRed, x, z, rotY, lift=0) {
+  const card = makeCard(rank, suit, isRed);
+  card.position.set(x, 0.9 + 0.13 + lift, z);
+  card.rotation.y = rotY;
+  tableGroup.add(card);
+  return card;
+}
+placeCard('A', '♠', false, -0.4, -1.8, 0.1);
+placeCard('K', '♥', true,  0.2, -1.7, -0.15, 0.012);
+// יד שחקן
+placeCard('10','♣', false, -0.3, 1.4, 0.2);
+placeCard('9', '♦', true,  0.35, 1.5, 0.05, 0.012);
+
+// ============================================================
+//  נעל קלפים (shoe) בפינת הדילר
+// ============================================================
+const shoe = new THREE.Group();
+const shoeMat = new THREE.MeshStandardMaterial({ color: 0x222831, roughness: 0.3, metalness: 0.5 });
+const shoeBase = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.5, 1.6), shoeMat);
+shoeBase.castShadow = true;
+shoe.add(shoeBase);
+const shoeBack = new THREE.Mesh(new THREE.BoxGeometry(1.4, 1.1, 0.12), shoeMat);
+shoeBack.position.set(0, 0.4, -0.74);
+shoe.add(shoeBack);
+const shoeRamp = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.08, 1.4), new THREE.MeshStandardMaterial({color:0x111417, roughness:0.4}));
+shoeRamp.position.set(0, 0.0, 0.05);
+shoeRamp.rotation.x = -0.22;
+shoe.add(shoeRamp);
+shoe.position.set(-3.1, 0.9 + 0.25, -1.6);
+shoe.rotation.y = 0.4;
+tableGroup.add(shoe);
+
+// מחזיק ז'יטונים של הדילר (chip tray) בקשת הדילר
+const tray = new THREE.Group();
+const trayMat = new THREE.MeshStandardMaterial({ color: 0x3a3a40, roughness: 0.35, metalness: 0.6 });
+const trayBase = new THREE.Mesh(new THREE.BoxGeometry(3.4, 0.25, 0.9), trayMat);
+tray.add(trayBase);
+for (let r=0; r<5; r++) {
+  const [c,e] = chipColors[r];
+  for (let i=0;i<6;i++){
+    const chip = makeChip(c,e);
+    chip.rotation.x = Math.PI/2;
+    chip.position.set(-1.4 + r*0.68, 0.18, -0.3 + i*0.12);
+    tray.add(chip);
+  }
+}
+tray.position.set(0, 0.9 + 0.13, -2.7);
+tableGroup.add(tray);
+
+// ============================================================
+//  מצב דו-ממד
+// ============================================================
+let is2D = false;
+const ortho = new THREE.OrthographicCamera(-7, 7, 7, -7, 0.1, 100);
+ortho.position.set(0, 20, 0);
+ortho.lookAt(0, 0.9, 0);
+
+function setOrthoFrustum() {
+  const aspect = window.innerWidth/window.innerHeight;
+  const h = 7;
+  ortho.left = -h*aspect; ortho.right = h*aspect;
+  ortho.top = h; ortho.bottom = -h;
+  ortho.updateProjectionMatrix();
+}
+setOrthoFrustum();
+
+// ============================================================
+//  אנימציית מעבר בין זוויות מצלמה
+// ============================================================
+let orbitMode = false;
+const views = {
+  front:  { pos: new THREE.Vector3(0, 9, 11),  tgt: new THREE.Vector3(0, 0.9, 0) },
+  dealer: { pos: new THREE.Vector3(0, 6.5, -9), tgt: new THREE.Vector3(0, 0.9, 0.5) },
+  player: { pos: new THREE.Vector3(0, 5, 9),    tgt: new THREE.Vector3(0, 0.9, 0) },
+  side:   { pos: new THREE.Vector3(12, 6, 2),   tgt: new THREE.Vector3(0, 0.9, 0) },
+};
+
+let anim = null;
+function flyTo(view) {
+  is2D = false;
+  orbitMode = false;
+  const v = views[view];
+  anim = {
+    fromPos: camera.position.clone(),
+    toPos: v.pos.clone(),
+    fromTgt: controls.target.clone(),
+    toTgt: v.tgt.clone(),
+    t: 0, dur: 1.0,
+  };
+}
+
+function easeInOut(t){ return t<0.5 ? 2*t*t : 1-Math.pow(-2*t+2,2)/2; }
+
+// ============================================================
+//  כפתורים
+// ============================================================
+const buttons = document.querySelectorAll('.btn');
+buttons.forEach(b => b.addEventListener('click', () => {
+  buttons.forEach(x => x.classList.remove('active'));
+  b.classList.add('active');
+  const view = b.dataset.view;
+  if (view === 'orbit') { orbitMode = true; is2D = false; anim = null; }
+  else if (view === 'top2d') { is2D = true; orbitMode = false; anim = null; setOrthoFrustum(); }
+  else flyTo(view);
+}));
+
+// ============================================================
+//  Resize
+// ============================================================
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth/window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  setOrthoFrustum();
+});
+
+// ============================================================
+//  לולאת רינדור
+// ============================================================
+const clock = new THREE.Clock();
+let orbitAngle = 0;
+
+function animate() {
+  requestAnimationFrame(animate);
+  const dt = clock.getDelta();
+
+  if (anim) {
+    anim.t += dt / anim.dur;
+    const k = easeInOut(Math.min(anim.t, 1));
+    camera.position.lerpVectors(anim.fromPos, anim.toPos, k);
+    controls.target.lerpVectors(anim.fromTgt, anim.toTgt, k);
+    if (anim.t >= 1) anim = null;
+  }
+
+  if (orbitMode && !anim) {
+    orbitAngle += dt * 0.25;
+    const r = 12, h = 7.5;
+    camera.position.set(Math.cos(orbitAngle)*r, h, Math.sin(orbitAngle)*r);
+    controls.target.set(0, 0.9, 0);
+  }
+
+  controls.update();
+
+  if (is2D) {
+    renderer.render(scene, ortho);
+  } else {
+    renderer.render(scene, camera);
+  }
+}
+
+document.getElementById('loading').style.display = 'none';
+document.querySelector('[data-view="front"]').classList.add('active');
+animate();
+</script>
+</body>
+</html>
