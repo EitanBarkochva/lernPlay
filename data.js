@@ -144,6 +144,35 @@ async function sbUpdate(path, body) {
 }
 
 /* ============================================================
+   הערות / דיווחי באגים מהמשתמשים (טבלת feedback)
+   ============================================================ */
+async function saveFeedback(fb) {
+  const row = {
+    game_code:  fb.gameCode  || null,
+    game_title: fb.gameTitle || null,
+    game_type:  fb.gameType  || null,
+    level:      (fb.level !== undefined && fb.level !== null && fb.level !== "") ? String(fb.level) : null,
+    screen:     fb.screen    || null,
+    reporter:   fb.reporter  || null,
+    kind:       fb.kind      || null,
+    message:    fb.message
+  };
+  if (!USE_SUPABASE) {
+    const key = "feedbackLocal";
+    const arr = JSON.parse(localStorage.getItem(key) || "[]");
+    arr.unshift({ ...row, id: "fb_" + Date.now(), created_at: new Date().toISOString() });
+    localStorage.setItem(key, JSON.stringify(arr));
+    return;
+  }
+  await sbInsert("feedback", row);
+}
+
+async function getFeedback() {
+  if (!USE_SUPABASE) return JSON.parse(localStorage.getItem("feedbackLocal") || "[]");
+  return sbSelect("feedback?select=*&order=created_at.desc&limit=500");
+}
+
+/* ============================================================
    שכבת localStorage — גיבוי מקומי (כשאין Supabase)
    ============================================================ */
 const STORAGE_KEY = "learningGameData";

@@ -12,6 +12,7 @@
 <body>
 
 <button id="soundToggle" class="sound-toggle" onclick="toggleSound()" title="צליל מופעל/מושתק" aria-label="הפעלת/השתקת צליל">🔊</button>
+<button id="feedbackBtn" class="feedback-btn" onclick="openFeedback()" title="דיווח על באג או הצעת שיפור" aria-label="דיווח על באג או הצעת שיפור">🐞</button>
 
 <!-- ============ 1. דף בית ============ -->
 <div id="homeScreen" class="screen active">
@@ -33,6 +34,7 @@
     <button class="big-btn orange" onclick="showScreen('teacherReportsScreen')">📊 צפייה בדוחות</button>
     <button class="big-btn pink"   onclick="showScreen('viewQuestionsScreen')">👀 צפייה בשאלות</button>
     <button class="big-btn dark"   onclick="showScreen('helpScreen')">❓ עזרה<br><small>איך משתמשים באפליקציה</small></button>
+    <button class="big-btn red-btn" onclick="showFeedbackList()">🐞 הערות ובאגים<br><small>מה שהמשתמשים דיווחו</small></button>
   </div>
   <p class="demo-hint">💡 טיפ: יש משחק דוגמה מוכן! קוד המשחק: <b>DEMO-A1</b></p>
   <p class="qa-link"><a href="test-scenario.html" target="_blank" rel="noopener">🧪 דף בדיקות מערכת (QA) — נפתח בכרטיסייה נפרדת</a></p>
@@ -619,6 +621,14 @@
       </ul>
     </div>
   </details>
+</div>
+
+<!-- ============ הערות ובאגים שהתקבלו ============ -->
+<div id="feedbackScreen" class="screen">
+  <button class="back-btn" onclick="showScreen('homeScreen')">⬅ חזרה</button>
+  <h2>🐞 הערות ובאגים שהתקבלו</h2>
+  <p class="muted">כל ההערות שנכתבו דרך הכפתור 🐞 שבכל מסך, כולל פירוט המשחק, השלב והמסך.</p>
+  <div id="feedbackList" class="table-wrap"></div>
 </div>
 
 <!-- ספריית קריאת קבצי Excel/CSV (לייבוא שאלות) -->

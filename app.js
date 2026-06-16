@@ -18,10 +18,12 @@ let quizMode = false;       // האם במצב "שאלות בלי משחק"
 /* ============================================================
    ניהול מסכים
    ============================================================ */
+let currentScreenId = "homeScreen";
 function showScreen(id) {
   document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
   const el = document.getElementById(id);
   if (el) el.classList.add("active");
+  currentScreenId = id;
   window.scrollTo(0, 0);
 }
 
@@ -1926,6 +1928,125 @@ function askExamTimer(cb) {
     if (v === "cancel") return;
     cb(parseInt(v) || 0);
   });
+}
+
+/* ============================================================
+   🐞 דיווח באגים / הצעות שיפור — כפתור בכל מסך + טבלת איסוף
+   ============================================================ */
+const SCREEN_LABELS = {
+  homeScreen: "דף הבית", createGameScreen: "יצירת משחק", browseScreen: "בחירת משחק",
+  bandsScreen: "אנגלית Bands", examsScreen: "מבחנים — בחירה", examRunScreen: "מבחן",
+  examResultScreen: "תוצאת מבחן", programsScreen: "תוכניות עולה", programGamesScreen: "משחקי תוכנית",
+  studentLoginScreen: "כניסת תלמיד", gameScreen: "מסך המשחק", quizRunScreen: "שאלות בלי משחק",
+  studentReportScreen: "דוח תלמיד", teacherReportsScreen: "דוחות מורה", viewQuestionsScreen: "צפייה בשאלות",
+  leaderboardScreen: "טבלת אלופים", duelHomeScreen: "תחרות 1 על 1", duelPlayScreen: "תחרות — משחק",
+  psychoScreen: "פסיכומטרי", helpScreen: "עזרה", feedbackScreen: "הערות ובאגים"
+};
+function screenLabel(id) { return SCREEN_LABELS[id] || id || ""; }
+
+function getFeedbackContext() {
+  let code = "", title = "", type = "", level = "", reporter = "";
+  if (typeof activeGame !== "undefined" && activeGame) { code = activeGame.code || ""; title = activeGame.title || ""; type = activeGame.gameType || ""; }
+  if (!code && typeof examGame !== "undefined" && examGame) { code = examGame.code || ""; title = examGame.title || ""; type = "exam"; }
+  if (typeof activeEngine !== "undefined" && activeEngine && typeof activeEngine.getCurrentLevel === "function") {
+    try { level = activeEngine.getCurrentLevel(); } catch (e) {}
+  }
+  if (typeof student !== "undefined" && student && student.name) reporter = student.name;
+  else if (typeof examName !== "undefined" && examName) reporter = examName;
+
+  let label = "מסך: " + screenLabel(currentScreenId);
+  if (code) label += " · משחק: " + title + " (" + code + ")";
+  if (level !== "" && level != null) label += " · שלב: " + level;
+  return { gameCode: code, gameTitle: title, gameType: type, level, reporter, screen: currentScreenId, label };
+}
+
+function openFeedback() {
+  closeFeedback();
+  const ctx = getFeedbackContext();
+  const overlay = document.createElement("div");
+  overlay.className = "modal show"; overlay.id = "feedbackModal";
+  overlay.dataset.kind = "bug";
+  overlay.innerHTML = `
+    <div class="modal-content" style="max-width:560px;text-align:right">
+      <h2 class="question-text" style="text-align:center">🐞 דיווח על באג / הצעת שיפור</h2>
+      <p class="muted" style="text-align:center;margin-top:-10px">${escapeHtml(ctx.label)}</p>
+      <div class="fb-kinds" id="fbKindBtns">
+        <button type="button" class="fb-kind active" data-kind="bug">🐞 באג</button>
+        <button type="button" class="fb-kind" data-kind="improvement">💡 הצעת שיפור</button>
+      </div>
+      <label class="fb-label">השם שלך (לא חובה)</label>
+      <input id="fbReporter" class="answer-input" style="text-align:right" placeholder="מי כותב?" value="${escapeAttr(ctx.reporter)}">
+      <label class="fb-label">מה ההערה?</label>
+      <textarea id="fbMessage" class="fb-textarea" rows="4" placeholder="כתבו כאן מה קרה או מה כדאי לשפר..."></textarea>
+      <div class="fb-status" id="fbStatus"></div>
+      <div style="display:flex;gap:10px;margin-top:12px">
+        <button class="btn green" style="flex:1" onclick="submitFeedback()">📨 שליחה</button>
+        <button class="btn-small" onclick="closeFeedback()">ביטול</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector("#fbKindBtns").addEventListener("click", e => {
+    const b = e.target.closest(".fb-kind"); if (!b) return;
+    overlay.querySelectorAll(".fb-kind").forEach(x => x.classList.remove("active"));
+    b.classList.add("active"); overlay.dataset.kind = b.dataset.kind;
+  });
+  overlay.addEventListener("click", e => { if (e.target === overlay) closeFeedback(); });
+  setTimeout(() => document.getElementById("fbMessage")?.focus(), 100);
+}
+
+function closeFeedback() { document.getElementById("feedbackModal")?.remove(); }
+
+async function submitFeedback() {
+  const msgEl = document.getElementById("fbMessage");
+  const status = document.getElementById("fbStatus");
+  const msg = msgEl.value.trim();
+  if (!msg) { status.className = "fb-status err"; status.textContent = "נא לכתוב הערה לפני השליחה"; msgEl.focus(); return; }
+
+  const overlay = document.getElementById("feedbackModal");
+  const ctx = getFeedbackContext();
+  ctx.reporter = document.getElementById("fbReporter").value.trim() || ctx.reporter;
+  ctx.kind = (overlay && overlay.dataset.kind) || "bug";
+  ctx.message = msg;
+
+  status.className = "fb-status"; status.textContent = "שולח...";
+  try {
+    await saveFeedback(ctx);
+    status.className = "fb-status ok"; status.textContent = "תודה! ההערה נשמרה ✓";
+    setTimeout(closeFeedback, 1200);
+  } catch (e) {
+    console.error(e);
+    status.className = "fb-status err"; status.textContent = "שגיאה בשמירה. נסו שוב.";
+  }
+}
+
+async function showFeedbackList() {
+  showScreen("feedbackScreen");
+  const c = document.getElementById("feedbackList");
+  c.innerHTML = "<p class='muted'>טוען...</p>";
+  let rows;
+  try { rows = await getFeedback(); }
+  catch (e) { console.error(e); c.innerHTML = "<p class='muted'>שגיאה בטעינה.</p>"; return; }
+  if (!rows.length) { c.innerHTML = "<p class='muted'>אין עדיין הערות. כל הערה שתישלח דרך 🐞 תופיע כאן.</p>"; return; }
+
+  const fmt = d => { try { return new Date(d).toLocaleString("he-IL"); } catch (e) { return d || ""; } };
+  const kindLabel = k => k === "improvement" ? "💡 שיפור" : k === "bug" ? "🐞 באג" : "";
+  c.innerHTML = `
+    <table class="report-table">
+      <thead><tr>
+        <th>תאריך</th><th>סוג</th><th>ההערה</th><th>משחק</th><th>שלב</th><th>מסך</th><th>מאת</th>
+      </tr></thead>
+      <tbody>` + rows.map(r => `
+        <tr>
+          <td>${escapeHtml(fmt(r.created_at))}</td>
+          <td>${kindLabel(r.kind)}</td>
+          <td style="text-align:right;max-width:300px">${escapeHtml(r.message)}</td>
+          <td>${escapeHtml(r.game_title || "")}${r.game_code ? (" (" + escapeHtml(r.game_code) + ")") : ""}</td>
+          <td>${escapeHtml(r.level || "")}</td>
+          <td>${escapeHtml(screenLabel(r.screen))}</td>
+          <td>${escapeHtml(r.reporter || "")}</td>
+        </tr>`).join("") + `
+      </tbody>
+    </table>`;
 }
 
 // ערבוב מערך (Fisher-Yates)
