@@ -1050,6 +1050,7 @@ async function showBands() {
 let examGames = [];
 let examGame = null, examName = "", examQuestions = [], examIndex = 0, examAnswers = [];
 let examTimer = null, examTimeLeft = 0, examTimed = false, examTotalSec = 0, examStart = 0;
+let examAnswered = false;   // מונע לחיצה כפולה בזמן הצגת המשוב
 
 function clearExamTimer() { if (examTimer) { clearInterval(examTimer); examTimer = null; } }
 
@@ -1145,40 +1146,67 @@ function updateExamTimer() {
 function renderExamQuestion() {
   const n = examQuestions.length;
   if (examIndex >= n) { finishExam(false); return; }
+  examAnswered = false;
   document.getElementById("examProgress").textContent = "שאלה " + (examIndex + 1) + " מתוך " + n;
   const q = examQuestions[examIndex];
   let answerHtml;
   if (q.type === "open") {
-    answerHtml = `<input type="text" id="examInput" class="answer-input" placeholder="כתוב תשובה" autocomplete="off">
-      <button class="btn" onclick="examOpenSubmit()">הבא ➡</button>`;
+    answerHtml = `<input type="text" id="examInput" class="answer-input" placeholder="כתוב תשובה" autocomplete="off"
+        onkeydown="if(event.key==='Enter')examOpenSubmit()">
+      <button class="btn" id="examSubmitBtn" onclick="examOpenSubmit()">בדיקה ✓</button>`;
   } else if (q.type === "truefalse") {
-    answerHtml = `<button class="btn answer-option" onclick="examAnswer('נכון')">נכון</button>
-      <button class="btn answer-option" onclick="examAnswer('לא נכון')">לא נכון</button>`;
+    answerHtml = `<button class="btn answer-option exam-opt" data-val="נכון" onclick="examAnswer('נכון')">נכון</button>
+      <button class="btn answer-option exam-opt" data-val="לא נכון" onclick="examAnswer('לא נכון')">לא נכון</button>`;
   } else {
     answerHtml = shuffle([q.correctAnswer, ...q.wrongAnswers]).map(o =>
-      `<button class="btn answer-option" onclick="examAnswer('${escapeAttr(o)}')">${escapeHtml(o)}</button>`).join("");
+      `<button class="btn answer-option exam-opt" data-val="${escapeAttr(o)}" onclick="examAnswer('${escapeAttr(o)}')">${escapeHtml(o)}</button>`).join("");
   }
   document.getElementById("examQuestionBox").innerHTML =
-    `<h2 class="question-text">${escapeHtml(q.text)}</h2><div class="answer-area">${answerHtml}</div>`;
+    `<h2 class="question-text">${escapeHtml(q.text)}</h2>
+     <div class="answer-area">${answerHtml}</div>
+     <div class="feedback" id="examFeedback"></div>`;
   if (q.type === "open") setTimeout(() => document.getElementById("examInput")?.focus(), 100);
 }
 
 function examOpenSubmit() {
+  if (examAnswered) return;
   const v = document.getElementById("examInput").value.trim();
   if (!v) { alert("נא לכתוב תשובה"); return; }
   examAnswer(v);
 }
 
-/* ----- מבחן: רישום תשובה והמשך (בלי משוב תוך כדי) ----- */
+/* ----- מבחן: רישום תשובה + משוב מיידי (✓/✗ + צליל) ואז המשך ----- */
 function examAnswer(val) {
+  if (examAnswered) return;          // כבר ענו על השאלה הזו
+  examAnswered = true;
   const q = examQuestions[examIndex];
   const correct = normalize(val) === normalize(q.correctAnswer);
   examAnswers.push({
     questionId: q.id, questionText: q.text, studentAnswer: val,
     correctAnswer: q.correctAnswer, isCorrect: correct, attempts: 1, coinsEarned: correct ? 10 : 0
   });
-  examIndex++;
-  renderExamQuestion();
+
+  // משוב חזותי
+  const box = document.getElementById("examQuestionBox");
+  box.querySelectorAll(".exam-opt").forEach(b => {
+    b.disabled = true;
+    if (b.getAttribute("data-val") === val) b.classList.add(correct ? "opt-correct" : "opt-wrong");
+    if (!correct && normalize(b.getAttribute("data-val")) === normalize(q.correctAnswer)) b.classList.add("opt-correct");
+  });
+  const inp = document.getElementById("examInput");
+  if (inp) { inp.disabled = true; const sb = document.getElementById("examSubmitBtn"); if (sb) sb.disabled = true; }
+
+  const fb = document.getElementById("examFeedback");
+  if (fb) {
+    if (correct) { fb.className = "feedback correct"; fb.innerHTML = "✅ נכון! כל הכבוד"; }
+    else { fb.className = "feedback wrong"; fb.innerHTML = "❌ טעות — התשובה הנכונה: <b>" + escapeHtml(q.correctAnswer) + "</b>"; }
+  }
+
+  // צליל מותאם
+  if (correct) playCorrect(); else playWrong();
+
+  // מעבר לשאלה הבאה
+  setTimeout(() => { examIndex++; renderExamQuestion(); }, correct ? 950 : 1700);
 }
 
 async function finishExam(timedOut) {
@@ -1890,6 +1918,40 @@ function playVictory() {
   beep(1318.5, t2, 0.6, "sine", 0.18);
 }
 
+// צליל קצר לתשובה נכונה — שני צלילים עולים נעימים
+function playCorrect() {
+  if (!soundEnabled()) return;
+  const ctx = getAudioCtx(); if (!ctx) return;
+  const now = ctx.currentTime;
+  const beep = (f, t, dur) => {
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = "triangle"; o.frequency.value = f;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.3, t + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g).connect(ctx.destination);
+    o.start(t); o.stop(t + dur + 0.02);
+  };
+  beep(659.25, now, 0.15);          // E5
+  beep(987.77, now + 0.12, 0.28);   // B5
+}
+
+// צליל קצר לתשובה שגויה — באזז יורד נמוך
+function playWrong() {
+  if (!soundEnabled()) return;
+  const ctx = getAudioCtx(); if (!ctx) return;
+  const now = ctx.currentTime;
+  const o = ctx.createOscillator(), g = ctx.createGain();
+  o.type = "sawtooth";
+  o.frequency.setValueAtTime(220, now);
+  o.frequency.exponentialRampToValueAtTime(130, now + 0.32);
+  g.gain.setValueAtTime(0.0001, now);
+  g.gain.exponentialRampToValueAtTime(0.22, now + 0.03);
+  g.gain.exponentialRampToValueAtTime(0.0001, now + 0.36);
+  o.connect(g).connect(ctx.destination);
+  o.start(now); o.stop(now + 0.38);
+}
+
 function updateSoundBtn() {
   const b = document.getElementById("soundToggle");
   if (b) b.textContent = soundEnabled() ? "🔊" : "🔇";
@@ -1937,7 +1999,7 @@ const SCREEN_LABELS = {
   homeScreen: "דף הבית", createGameScreen: "יצירת משחק", browseScreen: "בחירת משחק",
   bandsScreen: "אנגלית Bands", examsScreen: "מבחנים — בחירה", examRunScreen: "מבחן",
   examResultScreen: "תוצאת מבחן", programsScreen: "תוכניות עולה", programGamesScreen: "משחקי תוכנית",
-  studentLoginScreen: "כניסת תלמיד", gameScreen: "מסך המשחק", quizRunScreen: "שאלות בלי משחק",
+  studentLoginScreen: "כניסת תלמיד", marioGameScreen: "מסך המשחק", quizRunScreen: "שאלות בלי משחק",
   studentReportScreen: "דוח תלמיד", teacherReportsScreen: "דוחות מורה", viewQuestionsScreen: "צפייה בשאלות",
   leaderboardScreen: "טבלת אלופים", duelHomeScreen: "תחרות 1 על 1", duelPlayScreen: "תחרות — משחק",
   psychoScreen: "פסיכומטרי", helpScreen: "עזרה", feedbackScreen: "הערות ובאגים"
@@ -2019,14 +2081,11 @@ async function submitFeedback() {
   }
 }
 
-/* ----- דף ניהול הערות/תקלות — למנהל בלבד ----- */
-function getAdminCreds() {
-  const e = sessionStorage.getItem("adminEmail"), p = sessionStorage.getItem("adminPass");
-  return (e && p) ? { email: e, password: p } : null;
-}
+/* ----- דף ניהול הערות/תקלות — למנהל בלבד (Supabase Auth) ----- */
+function getAdminToken() { return sessionStorage.getItem("adminToken"); }
 
 function showFeedbackList() {   // נקרא מכפתור הבית
-  if (getAdminCreds()) showAdminDashboard();
+  if (getAdminToken()) showAdminDashboard();
   else { showScreen("adminLoginScreen"); setTimeout(() => document.getElementById("adminEmail")?.focus(), 100); }
 }
 
@@ -2034,22 +2093,26 @@ async function adminLogin() {
   const email = document.getElementById("adminEmail").value.trim();
   const pass  = document.getElementById("adminPass").value;
   const st = document.getElementById("adminLoginStatus");
-  st.className = "fb-status"; st.textContent = "בודק...";
+  if (!email || !pass) { st.className = "fb-status err"; st.textContent = "נא להזין אימייל וסיסמה"; return; }
+  st.className = "fb-status"; st.textContent = "מתחבר...";
   try {
-    const ok = await adminCheck(email, pass);
-    if (!ok) { st.className = "fb-status err"; st.textContent = "אימייל או סיסמה שגויים"; return; }
-    sessionStorage.setItem("adminEmail", email);
-    sessionStorage.setItem("adminPass", pass);
+    const token = await adminSignIn(email, pass);
+    if (!token) { st.className = "fb-status err"; st.textContent = "שגיאה בהתחברות"; return; }
+    sessionStorage.setItem("adminToken", token);
     document.getElementById("adminPass").value = "";
+    st.textContent = "";
     showAdminDashboard();
   } catch (e) {
-    console.error(e); st.className = "fb-status err"; st.textContent = "שגיאה בהתחברות";
+    if (e.message === "bad-credentials") {
+      st.className = "fb-status err"; st.textContent = "אימייל או סיסמה שגויים";
+    } else {
+      console.error(e); st.className = "fb-status err"; st.textContent = "שגיאה בהתחברות";
+    }
   }
 }
 
 function adminLogout() {
-  sessionStorage.removeItem("adminEmail");
-  sessionStorage.removeItem("adminPass");
+  sessionStorage.removeItem("adminToken");
   showScreen("homeScreen");
 }
 
@@ -2061,13 +2124,13 @@ function fbLocation(r) {
 }
 
 async function showAdminDashboard() {
-  const creds = getAdminCreds();
-  if (!creds) { showFeedbackList(); return; }
+  const token = getAdminToken();
+  if (!token) { showFeedbackList(); return; }
   showScreen("feedbackScreen");
   const c = document.getElementById("feedbackList");
   c.innerHTML = "<p class='muted'>טוען...</p>";
   let rows;
-  try { rows = await adminGetFeedback(creds.email, creds.password); }
+  try { rows = await adminGetFeedback(token); }
   catch (e) { console.error(e); c.innerHTML = "<p class='muted'>שגיאה בטעינה — ייתכן שההתחברות פגה. <a href='#' onclick='adminLogout();return false'>התחבר שוב</a></p>"; return; }
   if (!Array.isArray(rows)) { c.innerHTML = "<p class='muted'>שגיאת הרשאה.</p>"; return; }
   if (!rows.length) { c.innerHTML = "<p class='muted'>אין עדיין הערות. כל דיווח שיישלח דרך 🐞 יופיע כאן.</p>"; return; }
@@ -2098,14 +2161,14 @@ async function showAdminDashboard() {
 }
 
 async function adminSaveRow(id) {
-  const creds = getAdminCreds();
-  if (!creds) { showFeedbackList(); return; }
+  const token = getAdminToken();
+  if (!token) { showFeedbackList(); return; }
   const fixed = document.getElementById("fbfix_" + id).checked;
   const note  = document.getElementById("fbnote_" + id).value;
   const btn = document.querySelector(`#fbrow_${CSS.escape(id)} .btn-small`);
   if (btn) { btn.disabled = true; btn.textContent = "שומר..."; }
   try {
-    await adminUpdateFeedback(creds.email, creds.password, id, fixed, note);
+    await adminUpdateFeedback(token, id, fixed, note);
     const tr = document.getElementById("fbrow_" + id);
     if (tr) tr.className = fixed ? "row-ok" : "";
     if (btn) { btn.textContent = "✓ נשמר"; setTimeout(() => { btn.textContent = "💾 שמור"; btn.disabled = false; }, 1200); }

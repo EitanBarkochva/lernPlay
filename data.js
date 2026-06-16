@@ -172,24 +172,46 @@ async function saveFeedback(fb) {
   });
 }
 
-/* ----- קריאה ל-RPC (פונקציות מסד נתונים) ----- */
-async function sbRpc(fn, body) {
-  const res = await sbFetch("rpc/" + fn, { method: "POST", body: JSON.stringify(body || {}) });
-  const txt = await res.text();
-  return txt ? JSON.parse(txt) : null;
+/* ----- ניהול הערות — מאובטח עם Supabase Auth (סיסמה מוצפנת בצד השרת) ----- */
+
+// כניסת מנהל: מחזיר access_token. זורק 'bad-credentials' אם הפרטים שגויים.
+async function adminSignIn(email, password) {
+  if (!USE_SUPABASE) return "local-token";
+  const res = await fetch(SUPABASE_URL + "/auth/v1/token?grant_type=password", {
+    method: "POST",
+    headers: { apikey: SUPABASE_ANON_KEY, "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password })
+  });
+  if (!res.ok) {
+    if (res.status === 400) throw new Error("bad-credentials");
+    throw new Error("login error " + res.status);
+  }
+  const d = await res.json();
+  return d.access_token;
 }
 
-/* ----- ניהול הערות (מוגן בסיסמה בצד השרת) ----- */
-async function adminCheck(email, password) {
-  if (!USE_SUPABASE) return email && password;   // מצב מקומי: ללא אימות אמיתי
-  const r = await sbRpc("admin_check", { p_email: email, p_password: password });
-  return r === true;
+// fetch עם טוקן של מנהל מחובר (עוקף את חסימת ה-anon דרך RLS)
+async function sbAuthFetch(path, token, options = {}) {
+  const res = await fetch(SUPABASE_URL + "/rest/v1/" + path, {
+    ...options,
+    headers: {
+      apikey: SUPABASE_ANON_KEY,
+      Authorization: "Bearer " + token,
+      "Content-Type": "application/json",
+      ...(options.headers || {})
+    }
+  });
+  if (!res.ok) { const t = await res.text(); throw new Error("Supabase error " + res.status + ": " + t); }
+  return res;
 }
-async function adminGetFeedback(email, password) {
+
+async function adminGetFeedback(token) {
   if (!USE_SUPABASE) return JSON.parse(localStorage.getItem("feedbackLocal") || "[]");
-  return sbRpc("admin_get_feedback", { p_email: email, p_password: password });
+  const res = await sbAuthFetch("feedback?select=*&order=created_at.desc&limit=1000", token);
+  return res.json();
 }
-async function adminUpdateFeedback(email, password, id, fixed, note) {
+
+async function adminUpdateFeedback(token, id, fixed, note) {
   if (!USE_SUPABASE) {
     const key = "feedbackLocal";
     const arr = JSON.parse(localStorage.getItem(key) || "[]");
@@ -197,10 +219,10 @@ async function adminUpdateFeedback(email, password, id, fixed, note) {
     if (row) { row.fixed = fixed; row.admin_note = note; localStorage.setItem(key, JSON.stringify(arr)); }
     return;
   }
-  await sbFetch("rpc/admin_update_feedback", {
-    method: "POST",
+  await sbAuthFetch("feedback?id=eq." + id, token, {
+    method: "PATCH",
     headers: { Prefer: "return=minimal" },
-    body: JSON.stringify({ p_email: email, p_password: password, p_id: id, p_fixed: fixed, p_note: note })
+    body: JSON.stringify({ fixed: fixed, admin_note: note })
   });
 }
 

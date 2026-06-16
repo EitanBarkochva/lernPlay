@@ -283,6 +283,21 @@ h3 { margin: 12px 0; color: #243746; }
 .feedback.correct { color: #27ae60; }
 .feedback.wrong { color: #e74c3c; }
 
+/* משוב מיידי על כפתורי תשובה במבחן */
+.answer-option:disabled { cursor: default; opacity: .65; filter: none; }
+.answer-option.opt-correct {
+  background: linear-gradient(160deg, #2ee07a, #1f9c52) !important;
+  opacity: 1 !important; box-shadow: 0 0 0 3px rgba(39,174,96,.35);
+  animation: optPop .3s ease;
+}
+.answer-option.opt-wrong {
+  background: linear-gradient(160deg, #ef5b4c, #b5281a) !important;
+  opacity: 1 !important; box-shadow: 0 0 0 3px rgba(231,76,60,.35);
+  animation: optShake .35s ease;
+}
+@keyframes optPop { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+@keyframes optShake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+
 /* ----- quiz ----- */
 .quiz-progress { text-align: center; font-weight: bold; color: #8e44ad; margin-bottom: 10px; }
 
