@@ -502,6 +502,11 @@ h3 { margin: 12px 0; color: #243746; }
 .fb-status.ok { color: #27ae60; }
 .fb-status.err { color: #e74c3c; }
 
+/* סטטוס שליחה אוטומטית של תוצאות להורה/מורה */
+.auto-email-status { font-weight: 700; line-height: 1.7; margin-bottom: 8px; color: #2c3e50; }
+.auto-email-status:empty { display: none; }
+.auto-email-status.sending { color: #2980b9; }
+
 /* טבלת ניהול תקלות */
 .feedback-admin .fb-admin-note {
   width: 100%; min-width: 120px; padding: 7px 9px; font-family: inherit; font-size: .9rem;

@@ -1051,6 +1051,7 @@ let examGames = [];
 let examGame = null, examName = "", examQuestions = [], examIndex = 0, examAnswers = [];
 let examTimer = null, examTimeLeft = 0, examTimed = false, examTotalSec = 0, examStart = 0;
 let examAnswered = false;   // מונע לחיצה כפולה בזמן הצגת המשוב
+let examParentEmail = "", examTeacherEmail = "";   // נמענים לשליחת תוצאות המבחן
 
 function clearExamTimer() { if (examTimer) { clearInterval(examTimer); examTimer = null; } }
 
@@ -1097,17 +1098,23 @@ async function startExam(code) {
   const name = document.getElementById("examName").value.trim();
   if (!name) { alert("נא להזין שם לפני בחירת בחינה"); return; }
   const minutes = parseInt(document.getElementById("examTime").value) || 0;
-  await startExamWith(code, name, minutes);
+  const emails = {
+    parent:  (document.getElementById("examParentEmail")  || {}).value?.trim() || "",
+    teacher: (document.getElementById("examTeacherEmail") || {}).value?.trim() || ""
+  };
+  await startExamWith(code, name, minutes, emails);
 }
 
 /* התחלת מבחן ישירות (משמש גם מתוך דוח התלמיד) */
-async function startExamWith(code, name, minutes) {
+async function startExamWith(code, name, minutes, emails) {
   let g;
   try { g = await getGameByCode(code); }
   catch (e) { console.error(e); alert("שגיאה בטעינת הבחינה"); return; }
   if (!g || !g.questions.length) { alert("הבחינה לא נמצאה"); return; }
 
   examGame = g; examName = name;
+  examParentEmail = (emails && emails.parent) || "";
+  examTeacherEmail = (emails && emails.teacher) || "";
   examQuestions = shuffle(g.questions);   // ערבוב שאלות
   examIndex = 0; examAnswers = [];
   examTimed = minutes > 0; examTotalSec = minutes * 60; examTimeLeft = examTotalSec; examStart = Date.now();
@@ -1121,7 +1128,9 @@ async function startExamWith(code, name, minutes) {
 function startExamFromReport() {
   if (!activeGame || !activeGame.code) { showExams(); return; }
   const name = (typeof student !== "undefined" && student && student.name) ? student.name : "תלמיד";
-  askExamTimer(minutes => startExamWith(activeGame.code, name, minutes));
+  const emails = (typeof student !== "undefined" && student)
+    ? { parent: student.parentEmail || "", teacher: student.teacherEmail || "" } : {};
+  askExamTimer(minutes => startExamWith(activeGame.code, name, minutes, emails));
 }
 
 function startExamTimer() {
@@ -1258,12 +1267,13 @@ function showExamResult(correct, total, pct, timedOut) {
       </table>
     </div>`;
 
-  // פאנל שליחת מייל
+  // פאנל שליחת מייל + שליחה אוטומטית להורה/מורה שהוזנו
   lastEmail = {
     subject: "תוצאת מבחן - " + examName + " - " + examGame.title,
     body: buildExamEmailBody(correct, total, pct)
   };
-  mountEmailPanel("examEmail", examGame.creatorEmail || "");
+  const examRecipients = buildRecipients(examParentEmail, examTeacherEmail);
+  mountEmailPanel("examEmail", (examRecipients[0] && examRecipients[0].email) || examGame.creatorEmail || "", examRecipients);
 
   showScreen("examResultScreen");
   if (pass) { setTimeout(() => launchConfetti(pct >= 90 ? 3200 : 2400), 250); playVictory(); }   // 🎉🔊 חגיגה בהצלחה
@@ -1274,7 +1284,9 @@ function buildExamEmailBody(correct, total, pct) {
   b += "הנבחן/ת " + examName + " סיים/ה מבחן.\n\n";
   b += "מקצוע/נושא: " + (examGame.subject || "") + " — " + examGame.title + "\n";
   b += "ציון: " + pct + "%\n";
+  b += "מספר שאלות במבחן: " + total + "\n";
   b += "תשובות נכונות: " + correct + " מתוך " + total + "\n";
+  b += "מטבעות זהב שנאספו: " + (correct * 10) + "\n";
   b += "תאריך: " + new Date().toLocaleString("he-IL") + "\n";
   return b;
 }
@@ -1300,9 +1312,13 @@ async function startGame() {
   catch (e) { console.error(e); alert("שגיאה בחיבור למסד הנתונים."); return; }
   if (!found) { alert("הקוד לא נמצא, בדוק שהקלדת נכון."); return; }
 
-  // מאתחלים מצב תלמיד
+  // מאתחלים מצב תלמיד (כולל כתובות מייל אופציונליות להורה/מורה)
   activeGame = found;
-  student = { name: name, grade: grade || found.grade };
+  student = {
+    name: name, grade: grade || found.grade,
+    parentEmail: (document.getElementById("parentEmail") || {}).value?.trim() || "",
+    teacherEmail: (document.getElementById("teacherEmail") || {}).value?.trim() || ""
+  };
   studentAnswers = [];
   currentAttempts = 0;
   quizMode = false;
@@ -1565,12 +1581,13 @@ function showStudentReport(result, correctCount, wrongCount) {
       <tbody>${tbody}</tbody>
     </table>`;
 
-  // פאנל שליחת מייל (mailto + אוטומטי)
+  // פאנל שליחת מייל + שליחה אוטומטית להורה/מורה שהוזנו ברישום
   lastEmail = {
     subject: "דוח תוצאות - " + result.studentName + " - " + game.title,
     body: buildStudentEmailBody(game, result, correctCount, wrongCount)
   };
-  mountEmailPanel("reportEmail", game.creatorEmail || "");
+  const recipients = buildRecipients(student && student.parentEmail, student && student.teacherEmail);
+  mountEmailPanel("reportEmail", (recipients[0] && recipients[0].email) || game.creatorEmail || "", recipients);
 
   showScreen("studentReportScreen");
   setTimeout(() => launchConfetti(), 250);   // 🎉 חגיגה!
@@ -1582,6 +1599,7 @@ function buildStudentEmailBody(game, result, correctCount, wrongCount) {
   b += "התלמיד/ה " + result.studentName + " (כיתה " + result.studentGrade + ") סיים/ה את המשחק.\n\n";
   b += "מקצוע: " + game.subject + "\n";
   b += "משחק: " + game.title + "\n";
+  b += "מספר שאלות שענה/תה: " + (correctCount + wrongCount) + "\n";
   b += "תשובות נכונות: " + correctCount + "\n";
   b += "תשובות שגויות: " + wrongCount + "\n";
   b += "מטבעות זהב: " + result.goldCoins + " | כסף: " + result.silverCoins + " | סך הכל: " + result.totalCoins + "\n";
@@ -1595,12 +1613,22 @@ function buildStudentEmailBody(game, result, correctCount, wrongCount) {
    ============================================================ */
 let lastEmail = { subject: "", body: "" };
 
-function mountEmailPanel(mountId, defaultTo) {
+// בונה רשימת נמענים (הורה/מורה) מתוך כתובות שמולאו
+function buildRecipients(parent, teacher) {
+  const r = [];
+  if (parent && parent.trim())  r.push({ role: "הורה", email: parent.trim() });
+  if (teacher && teacher.trim()) r.push({ role: "מורה", email: teacher.trim() });
+  return r;
+}
+
+function mountEmailPanel(mountId, defaultTo, autoRecipients) {
   const el = document.getElementById(mountId);
   if (!el) return;
+  const statusId = mountId + "_autoStatus";
   el.innerHTML = `
     <div class="form-card email-panel">
       <label>📧 שליחת הדוח במייל למורה / הורה</label>
+      <div class="auto-email-status" id="${statusId}"></div>
       <input type="email" class="emailTo" placeholder="כתובת מייל" value="${escapeAttr(defaultTo || "")}">
       <div class="email-btns">
         <button class="btn blue" onclick="emailMailto(this)">📧 פתח באפליקציית המייל</button>
@@ -1608,6 +1636,27 @@ function mountEmailPanel(mountId, defaultTo) {
       </div>
       <p class="ai-status email-status"></p>
     </div>`;
+  // שליחה אוטומטית לנמענים שהוזנו בעת הרישום
+  if (autoRecipients && autoRecipients.length) autoSendResults(autoRecipients, document.getElementById(statusId));
+}
+
+// שליחה אוטומטית של הדוח לכל הנמענים (הורה/מורה), עם סטטוס לכל אחד
+async function autoSendResults(recipients, statusEl) {
+  if (!statusEl) return;
+  statusEl.className = "auto-email-status sending";
+  statusEl.innerHTML = "📧 שולח תוצאות אוטומטית...";
+  const lines = [];
+  for (const r of recipients) {
+    try {
+      await sendReportEmail({ to: r.email, subject: lastEmail.subject, body: lastEmail.body });
+      lines.push(`✅ נשלח ל${r.role}: ${escapeHtml(r.email)}`);
+    } catch (e) {
+      console.error("auto email failed", e);
+      lines.push(`⚠️ לא נשלח אוטומטית ל${r.role} (${escapeHtml(r.email)}) — אפשר לשלוח עם הכפתורים למטה`);
+    }
+  }
+  statusEl.className = "auto-email-status";
+  statusEl.innerHTML = lines.join("<br>");
 }
 
 function emailMailto(btn) {
