@@ -34,7 +34,7 @@
     <button class="big-btn orange" onclick="showScreen('teacherReportsScreen')">📊 צפייה בדוחות</button>
     <button class="big-btn pink"   onclick="showScreen('viewQuestionsScreen')">👀 צפייה בשאלות</button>
     <button class="big-btn dark"   onclick="showScreen('helpScreen')">❓ עזרה<br><small>איך משתמשים באפליקציה</small></button>
-    <button class="big-btn red-btn" onclick="showFeedbackList()">🐞 הערות ובאגים<br><small>מה שהמשתמשים דיווחו</small></button>
+    <button class="big-btn dark" onclick="showFeedbackList()">🔒 ניהול תקלות<br><small>למנהל בלבד</small></button>
   </div>
   <p class="demo-hint">💡 טיפ: יש משחק דוגמה מוכן! קוד המשחק: <b>DEMO-A1</b></p>
   <p class="qa-link"><a href="test-scenario.html" target="_blank" rel="noopener">🧪 דף בדיקות מערכת (QA) — נפתח בכרטיסייה נפרדת</a></p>
@@ -623,11 +623,30 @@
   </details>
 </div>
 
-<!-- ============ הערות ובאגים שהתקבלו ============ -->
+<!-- ============ התחברות מנהל ============ -->
+<div id="adminLoginScreen" class="screen">
+  <button class="back-btn" onclick="showScreen('homeScreen')">⬅ חזרה</button>
+  <h2>🔒 כניסת מנהל</h2>
+  <div class="form-card" style="max-width:420px;margin:0 auto">
+    <p class="muted">דף ניהול התקלות וההערות פתוח למנהל בלבד.</p>
+    <label>אימייל</label>
+    <input type="email" id="adminEmail" placeholder="האימייל שלך" autocomplete="username">
+    <label>סיסמה</label>
+    <input type="password" id="adminPass" placeholder="סיסמה" autocomplete="current-password"
+           onkeydown="if(event.key==='Enter')adminLogin()">
+    <div class="fb-status" id="adminLoginStatus"></div>
+    <button class="btn green big" onclick="adminLogin()">🔓 כניסה</button>
+  </div>
+</div>
+
+<!-- ============ ניהול תקלות / הערות (מנהל בלבד) ============ -->
 <div id="feedbackScreen" class="screen">
   <button class="back-btn" onclick="showScreen('homeScreen')">⬅ חזרה</button>
-  <h2>🐞 הערות ובאגים שהתקבלו</h2>
-  <p class="muted">כל ההערות שנכתבו דרך הכפתור 🐞 שבכל מסך, כולל פירוט המשחק, השלב והמסך.</p>
+  <h2>🔒 ניהול תקלות והערות</h2>
+  <div class="report-actions" style="justify-content:flex-start;margin:0 0 12px">
+    <button class="btn-small" onclick="showAdminDashboard()">🔄 רענון</button>
+    <button class="btn-small btn-danger" onclick="adminLogout()">🚪 יציאה</button>
+  </div>
   <div id="feedbackList" class="table-wrap"></div>
 </div>
 

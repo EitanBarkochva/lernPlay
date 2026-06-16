@@ -160,16 +160,48 @@ async function saveFeedback(fb) {
   if (!USE_SUPABASE) {
     const key = "feedbackLocal";
     const arr = JSON.parse(localStorage.getItem(key) || "[]");
-    arr.unshift({ ...row, id: "fb_" + Date.now(), created_at: new Date().toISOString() });
+    arr.unshift({ ...row, id: "fb_" + Date.now(), created_at: new Date().toISOString(), fixed: false, admin_note: null });
     localStorage.setItem(key, JSON.stringify(arr));
     return;
   }
-  await sbInsert("feedback", row);
+  // return=minimal — אין צורך בהרשאת קריאה (anon לא יכול לקרוא את הטבלה)
+  await sbFetch("feedback", {
+    method: "POST",
+    headers: { Prefer: "return=minimal" },
+    body: JSON.stringify(row)
+  });
 }
 
-async function getFeedback() {
+/* ----- קריאה ל-RPC (פונקציות מסד נתונים) ----- */
+async function sbRpc(fn, body) {
+  const res = await sbFetch("rpc/" + fn, { method: "POST", body: JSON.stringify(body || {}) });
+  const txt = await res.text();
+  return txt ? JSON.parse(txt) : null;
+}
+
+/* ----- ניהול הערות (מוגן בסיסמה בצד השרת) ----- */
+async function adminCheck(email, password) {
+  if (!USE_SUPABASE) return email && password;   // מצב מקומי: ללא אימות אמיתי
+  const r = await sbRpc("admin_check", { p_email: email, p_password: password });
+  return r === true;
+}
+async function adminGetFeedback(email, password) {
   if (!USE_SUPABASE) return JSON.parse(localStorage.getItem("feedbackLocal") || "[]");
-  return sbSelect("feedback?select=*&order=created_at.desc&limit=500");
+  return sbRpc("admin_get_feedback", { p_email: email, p_password: password });
+}
+async function adminUpdateFeedback(email, password, id, fixed, note) {
+  if (!USE_SUPABASE) {
+    const key = "feedbackLocal";
+    const arr = JSON.parse(localStorage.getItem(key) || "[]");
+    const row = arr.find(r => r.id === id);
+    if (row) { row.fixed = fixed; row.admin_note = note; localStorage.setItem(key, JSON.stringify(arr)); }
+    return;
+  }
+  await sbFetch("rpc/admin_update_feedback", {
+    method: "POST",
+    headers: { Prefer: "return=minimal" },
+    body: JSON.stringify({ p_email: email, p_password: password, p_id: id, p_fixed: fixed, p_note: note })
+  });
 }
 
 /* ============================================================

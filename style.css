@@ -487,6 +487,15 @@ h3 { margin: 12px 0; color: #243746; }
 .fb-status.ok { color: #27ae60; }
 .fb-status.err { color: #e74c3c; }
 
+/* טבלת ניהול תקלות */
+.feedback-admin .fb-admin-note {
+  width: 100%; min-width: 120px; padding: 7px 9px; font-family: inherit; font-size: .9rem;
+  border: 2px solid #d7e0ea; border-radius: 8px; background: #fff;
+}
+.feedback-admin .fb-admin-note:focus { outline: none; border-color: #3aa0e6; }
+.feedback-admin .fb-fix { width: 22px; height: 22px; cursor: pointer; }
+.feedback-admin td { vertical-align: middle; }
+
 /* ----- באנר חגיגה בדוח ----- */
 .celebrate-banner {
   text-align: center; margin: 4px 0 18px; padding: 22px 18px; border-radius: 22px; color: #fff;

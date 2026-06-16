@@ -2019,34 +2019,101 @@ async function submitFeedback() {
   }
 }
 
-async function showFeedbackList() {
+/* ----- דף ניהול הערות/תקלות — למנהל בלבד ----- */
+function getAdminCreds() {
+  const e = sessionStorage.getItem("adminEmail"), p = sessionStorage.getItem("adminPass");
+  return (e && p) ? { email: e, password: p } : null;
+}
+
+function showFeedbackList() {   // נקרא מכפתור הבית
+  if (getAdminCreds()) showAdminDashboard();
+  else { showScreen("adminLoginScreen"); setTimeout(() => document.getElementById("adminEmail")?.focus(), 100); }
+}
+
+async function adminLogin() {
+  const email = document.getElementById("adminEmail").value.trim();
+  const pass  = document.getElementById("adminPass").value;
+  const st = document.getElementById("adminLoginStatus");
+  st.className = "fb-status"; st.textContent = "בודק...";
+  try {
+    const ok = await adminCheck(email, pass);
+    if (!ok) { st.className = "fb-status err"; st.textContent = "אימייל או סיסמה שגויים"; return; }
+    sessionStorage.setItem("adminEmail", email);
+    sessionStorage.setItem("adminPass", pass);
+    document.getElementById("adminPass").value = "";
+    showAdminDashboard();
+  } catch (e) {
+    console.error(e); st.className = "fb-status err"; st.textContent = "שגיאה בהתחברות";
+  }
+}
+
+function adminLogout() {
+  sessionStorage.removeItem("adminEmail");
+  sessionStorage.removeItem("adminPass");
+  showScreen("homeScreen");
+}
+
+function fbLocation(r) {
+  let loc = screenLabel(r.screen);
+  if (r.game_title || r.game_code) loc += " · " + (r.game_title || "") + (r.game_code ? (" (" + r.game_code + ")") : "");
+  if (r.level) loc += " · שלב " + r.level;
+  return loc;
+}
+
+async function showAdminDashboard() {
+  const creds = getAdminCreds();
+  if (!creds) { showFeedbackList(); return; }
   showScreen("feedbackScreen");
   const c = document.getElementById("feedbackList");
   c.innerHTML = "<p class='muted'>טוען...</p>";
   let rows;
-  try { rows = await getFeedback(); }
-  catch (e) { console.error(e); c.innerHTML = "<p class='muted'>שגיאה בטעינה.</p>"; return; }
-  if (!rows.length) { c.innerHTML = "<p class='muted'>אין עדיין הערות. כל הערה שתישלח דרך 🐞 תופיע כאן.</p>"; return; }
+  try { rows = await adminGetFeedback(creds.email, creds.password); }
+  catch (e) { console.error(e); c.innerHTML = "<p class='muted'>שגיאה בטעינה — ייתכן שההתחברות פגה. <a href='#' onclick='adminLogout();return false'>התחבר שוב</a></p>"; return; }
+  if (!Array.isArray(rows)) { c.innerHTML = "<p class='muted'>שגיאת הרשאה.</p>"; return; }
+  if (!rows.length) { c.innerHTML = "<p class='muted'>אין עדיין הערות. כל דיווח שיישלח דרך 🐞 יופיע כאן.</p>"; return; }
 
   const fmt = d => { try { return new Date(d).toLocaleString("he-IL"); } catch (e) { return d || ""; } };
-  const kindLabel = k => k === "improvement" ? "💡 שיפור" : k === "bug" ? "🐞 באג" : "";
+  const kindLabel = k => k === "bug" ? "🐞 תקלה" : "💡 הערה";
+  const open = rows.filter(r => !r.fixed).length;
+
   c.innerHTML = `
-    <table class="report-table">
+    <p class="muted" style="margin-bottom:8px">סה"כ ${rows.length} · פתוחות: <b>${open}</b> · טופלו: ${rows.length - open}</p>
+    <table class="report-table feedback-admin">
       <thead><tr>
-        <th>תאריך</th><th>סוג</th><th>ההערה</th><th>משחק</th><th>שלב</th><th>מסך</th><th>מאת</th>
+        <th>תאריך</th><th>סוג</th><th>איפה</th><th>הדיווח</th><th>מאת</th><th>תוקן?</th><th>הערת מנהל</th><th></th>
       </tr></thead>
       <tbody>` + rows.map(r => `
-        <tr>
+        <tr id="fbrow_${r.id}" class="${r.fixed ? "row-ok" : ""}">
           <td>${escapeHtml(fmt(r.created_at))}</td>
           <td>${kindLabel(r.kind)}</td>
-          <td style="text-align:right;max-width:300px">${escapeHtml(r.message)}</td>
-          <td>${escapeHtml(r.game_title || "")}${r.game_code ? (" (" + escapeHtml(r.game_code) + ")") : ""}</td>
-          <td>${escapeHtml(r.level || "")}</td>
-          <td>${escapeHtml(screenLabel(r.screen))}</td>
+          <td style="text-align:right;max-width:200px">${escapeHtml(fbLocation(r))}</td>
+          <td style="text-align:right;max-width:260px">${escapeHtml(r.message)}</td>
           <td>${escapeHtml(r.reporter || "")}</td>
+          <td><input type="checkbox" class="fb-fix" id="fbfix_${r.id}" ${r.fixed ? "checked" : ""}></td>
+          <td><input type="text" class="fb-admin-note" id="fbnote_${r.id}" value="${escapeAttr(r.admin_note || "")}" placeholder="הערה / סטטוס..."></td>
+          <td><button class="btn-small" onclick="adminSaveRow('${escapeAttr(r.id)}')">💾 שמור</button></td>
         </tr>`).join("") + `
       </tbody>
     </table>`;
+}
+
+async function adminSaveRow(id) {
+  const creds = getAdminCreds();
+  if (!creds) { showFeedbackList(); return; }
+  const fixed = document.getElementById("fbfix_" + id).checked;
+  const note  = document.getElementById("fbnote_" + id).value;
+  const btn = document.querySelector(`#fbrow_${CSS.escape(id)} .btn-small`);
+  if (btn) { btn.disabled = true; btn.textContent = "שומר..."; }
+  try {
+    await adminUpdateFeedback(creds.email, creds.password, id, fixed, note);
+    const tr = document.getElementById("fbrow_" + id);
+    if (tr) tr.className = fixed ? "row-ok" : "";
+    if (btn) { btn.textContent = "✓ נשמר"; setTimeout(() => { btn.textContent = "💾 שמור"; btn.disabled = false; }, 1200); }
+  } catch (e) {
+    console.error(e);
+    if (btn) { btn.textContent = "💾 שמור"; btn.disabled = false; }
+    alert("שגיאה בשמירה. נסו שוב.");
+  }
 }
 
 // ערבוב מערך (Fisher-Yates)
