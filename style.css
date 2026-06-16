@@ -502,6 +502,14 @@ h3 { margin: 12px 0; color: #243746; }
 .fb-status.ok { color: #27ae60; }
 .fb-status.err { color: #e74c3c; }
 
+/* כרטיס בחינה — כפתורי התחלה + ייצוא PDF */
+.exam-card { cursor: default; }
+.exam-card:hover { transform: none; border-color: #e8edf2; box-shadow: 0 3px 10px rgba(0,0,0,.06); }
+.exam-card-actions { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+.exam-card-actions .exam-go { margin-top: 0; padding: 10px; font-size: 1rem; width: 100%; }
+.exam-card-actions .exam-pdf { background: #b5651d; }
+.exam-card-actions .exam-pdf:hover { filter: brightness(1.08); }
+
 /* סטטוס שליחה אוטומטית של תוצאות להורה/מורה */
 .auto-email-status { font-weight: 700; line-height: 1.7; margin-bottom: 8px; color: #2c3e50; }
 .auto-email-status:empty { display: none; }

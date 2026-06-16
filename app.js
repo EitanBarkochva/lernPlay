@@ -1084,11 +1084,14 @@ function renderExams() {
     const grp = g.grade ? ("כיתה " + g.grade) : (g.subject || "כללי");
     if (grp !== last) { if (last !== null) html += "</div>"; html += `<h3 class="browse-grade">${escapeHtml(grp)}</h3><div class="browse-grid">`; last = grp; }
     html += `
-      <button class="game-card" onclick="startExam('${escapeAttr(g.code)}')">
+      <div class="game-card exam-card">
         <span class="game-card-topic">${escapeHtml(g.topic || g.title)}</span>
         <span class="game-card-sub">${escapeHtml(g.subject)} · ${escapeHtml(g.code)}${g.subTopic ? " · " + escapeHtml(g.subTopic) : ""}</span>
-        <span class="game-card-play">📝 התחל מבחן</span>
-      </button>`;
+        <div class="exam-card-actions">
+          <button class="btn green exam-go" onclick="startExam('${escapeAttr(g.code)}')">📝 התחל מבחן</button>
+          <button class="btn-small exam-pdf" onclick="exportExamPdf('${escapeAttr(g.code)}')">📄 ייצוא ל-PDF</button>
+        </div>
+      </div>`;
   });
   if (last !== null) html += "</div>";
   c.innerHTML = html;
@@ -1103,6 +1106,64 @@ async function startExam(code) {
     teacher: (document.getElementById("examTeacherEmail") || {}).value?.trim() || ""
   };
   await startExamWith(code, name, minutes, emails);
+}
+
+/* ----- ייצוא שאלות הבחינה ל-PDF (דרך חלון הדפסה -> "שמירה כ-PDF") ----- */
+async function exportExamPdf(code) {
+  let g;
+  try { g = await getGameByCode(code); }
+  catch (e) { console.error(e); alert("שגיאה בטעינת הבחינה"); return; }
+  if (!g || !g.questions.length) { alert("לא נמצאו שאלות לבחינה זו"); return; }
+
+  const letters = ["א", "ב", "ג", "ד", "ה", "ו"];
+  let qHtml = "", keyHtml = "";
+  g.questions.forEach((q, i) => {
+    qHtml += `<div class="q"><div class="qt">${i + 1}. ${escapeHtml(q.text)}</div>`;
+    if (q.type === "open") {
+      qHtml += `<div class="ans-line">תשובה: ______________________________________</div>`;
+      keyHtml += `<div>${i + 1}. ${escapeHtml(q.correctAnswer)}</div>`;
+    } else {
+      const opts = (q.type === "truefalse") ? ["נכון", "לא נכון"]
+                 : shuffle([q.correctAnswer, ...(q.wrongAnswers || [])]);
+      qHtml += `<div class="opts">` + opts.map((o, j) =>
+        `<div class="opt">${letters[j] || (j + 1)}. ${escapeHtml(o)}</div>`).join("") + `</div>`;
+      const ci = opts.findIndex(o => normalize(o) === normalize(q.correctAnswer));
+      keyHtml += `<div>${i + 1}. ${letters[ci] || ""} (${escapeHtml(q.correctAnswer)})</div>`;
+    }
+    qHtml += `</div>`;
+  });
+
+  const doc = `<!DOCTYPE html><html dir="rtl" lang="he"><head><meta charset="utf-8">
+    <title>${escapeHtml(g.title)}</title>
+    <style>
+      * { box-sizing: border-box; }
+      body { font-family: "Heebo", Arial, sans-serif; direction: rtl; color: #1a1a1a; margin: 28px; line-height: 1.5; }
+      h1 { font-size: 22px; margin: 0 0 4px; }
+      .meta { color: #555; font-size: 13px; margin-bottom: 6px; }
+      .name-line { font-size: 14px; border-bottom: 1px solid #999; padding-bottom: 6px; margin-bottom: 18px; }
+      .q { margin: 0 0 16px; page-break-inside: avoid; }
+      .qt { font-weight: 700; font-size: 16px; margin-bottom: 6px; }
+      .opts { padding-right: 18px; }
+      .opt { margin: 3px 0; font-size: 15px; }
+      .ans-line { color: #444; margin-top: 6px; }
+      .key { page-break-before: always; }
+      .key h2 { font-size: 18px; border-bottom: 2px solid #333; padding-bottom: 4px; }
+      .key div { margin: 3px 0; font-size: 14px; }
+      @media print { body { margin: 14mm; } }
+    </style></head><body>
+    <h1>${escapeHtml(g.title)}</h1>
+    <div class="meta">מקצוע: ${escapeHtml(g.subject || "")} · קוד: ${escapeHtml(g.code)} · ${g.questions.length} שאלות</div>
+    <div class="name-line">שם: ______________________   כיתה: __________   תאריך: __________   ציון: ______</div>
+    ${qHtml}
+    <div class="key"><h2>מפתח תשובות (למורה)</h2>${keyHtml}</div>
+    </body></html>`;
+
+  const w = window.open("", "_blank");
+  if (!w) { alert("הדפדפן חסם את חלון ההדפסה. אנא אפשרו חלונות קופצים (pop-ups) ונסו שוב."); return; }
+  w.document.write(doc);
+  w.document.close();
+  w.focus();
+  setTimeout(() => { try { w.print(); } catch (e) {} }, 500);
 }
 
 /* התחלת מבחן ישירות (משמש גם מתוך דוח התלמיד) */
