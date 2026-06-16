@@ -1334,7 +1334,7 @@ function showExamResult(correct, total, pct, timedOut) {
     body: buildExamEmailBody(correct, total, pct)
   };
   const examRecipients = buildRecipients(examParentEmail, examTeacherEmail);
-  mountEmailPanel("examEmail", (examRecipients[0] && examRecipients[0].email) || examGame.creatorEmail || "", examRecipients);
+  mountEmailPanel("examEmail", examRecipients, examGame.creatorEmail || "");
 
   showScreen("examResultScreen");
   if (pass) { setTimeout(() => launchConfetti(pct >= 90 ? 3200 : 2400), 250); playVictory(); }   // 🎉🔊 חגיגה בהצלחה
@@ -1648,7 +1648,7 @@ function showStudentReport(result, correctCount, wrongCount) {
     body: buildStudentEmailBody(game, result, correctCount, wrongCount)
   };
   const recipients = buildRecipients(student && student.parentEmail, student && student.teacherEmail);
-  mountEmailPanel("reportEmail", (recipients[0] && recipients[0].email) || game.creatorEmail || "", recipients);
+  mountEmailPanel("reportEmail", recipients, game.creatorEmail || "");
 
   showScreen("studentReportScreen");
   setTimeout(() => launchConfetti(), 250);   // 🎉 חגיגה!
@@ -1682,50 +1682,39 @@ function buildRecipients(parent, teacher) {
   return r;
 }
 
-function mountEmailPanel(mountId, defaultTo, autoRecipients) {
+function mountEmailPanel(mountId, recipients, fallbackTo) {
   const el = document.getElementById(mountId);
   if (!el) return;
-  const statusId = mountId + "_autoStatus";
+  const emails = (recipients && recipients.length) ? recipients.map(r => r.email) : [];
+  const toVal = emails.length ? emails.join(", ") : (fallbackTo || "");
+  const hint = (recipients && recipients.length)
+    ? "יישלח אל: " + recipients.map(r => r.role + " — " + escapeHtml(r.email)).join(" · ")
+    : "מלאו כתובת מייל ולחצו שלח";
   el.innerHTML = `
     <div class="form-card email-panel">
-      <label>📧 שליחת הדוח במייל למורה / הורה</label>
-      <div class="auto-email-status" id="${statusId}"></div>
-      <input type="email" class="emailTo" placeholder="כתובת מייל" value="${escapeAttr(defaultTo || "")}">
+      <label>📧 שליחת הדוח במייל להורה / מורה</label>
+      <p class="muted email-hint">${hint}</p>
+      <input type="email" class="emailTo" value="${escapeAttr(toVal)}" placeholder="כתובת מייל (אפשר כמה, מופרדות בפסיק)">
       <div class="email-btns">
-        <button class="btn blue" onclick="emailMailto(this)">📧 פתח באפליקציית המייל</button>
-        <button class="btn green" onclick="emailAuto(this)">🚀 שלח אוטומטית</button>
+        <button class="btn green big" onclick="emailMailto(this)">📧 שלח דוח</button>
       </div>
       <p class="ai-status email-status"></p>
     </div>`;
-  // שליחה אוטומטית לנמענים שהוזנו בעת הרישום
-  if (autoRecipients && autoRecipients.length) autoSendResults(autoRecipients, document.getElementById(statusId));
-}
-
-// שליחה אוטומטית של הדוח לכל הנמענים (הורה/מורה), עם סטטוס לכל אחד
-async function autoSendResults(recipients, statusEl) {
-  if (!statusEl) return;
-  statusEl.className = "auto-email-status sending";
-  statusEl.innerHTML = "📧 שולח תוצאות אוטומטית...";
-  const lines = [];
-  for (const r of recipients) {
-    try {
-      await sendReportEmail({ to: r.email, subject: lastEmail.subject, body: lastEmail.body });
-      lines.push(`✅ נשלח ל${r.role}: ${escapeHtml(r.email)}`);
-    } catch (e) {
-      console.error("auto email failed", e);
-      lines.push(`⚠️ לא נשלח אוטומטית ל${r.role} (${escapeHtml(r.email)}) — אפשר לשלוח עם הכפתורים למטה`);
-    }
-  }
-  statusEl.className = "auto-email-status";
-  statusEl.innerHTML = lines.join("<br>");
 }
 
 function emailMailto(btn) {
   const panel = btn.closest(".email-panel");
-  const to = panel.querySelector(".emailTo").value.trim();
-  window.location.href = "mailto:" + encodeURIComponent(to) +
+  const raw = panel.querySelector(".emailTo").value || "";
+  const addr = raw.split(",").map(s => s.trim()).filter(Boolean).join(",");
+  const status = panel.querySelector(".email-status");
+  if (!addr) {
+    if (status) { status.className = "ai-status email-status err"; status.textContent = "נא להזין כתובת מייל"; }
+    return;
+  }
+  window.location.href = "mailto:" + addr +
     "?subject=" + encodeURIComponent(lastEmail.subject) +
     "&body=" + encodeURIComponent(lastEmail.body);
+  if (status) { status.className = "ai-status email-status ok"; status.textContent = "📧 נפתחה אפליקציית המייל — נותר ללחוץ 'שלח' שם"; }
 }
 
 async function emailAuto(btn) {
