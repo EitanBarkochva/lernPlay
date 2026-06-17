@@ -539,6 +539,56 @@ async function getResultsByCode(code) {
 }
 
 /* ------------------------------------------------------------
+   getStudentHistory(name) - היסטוריית המשחקים של תלמיד לפי שם.
+   מחזיר: [{ code, title, subject, grade, topic, correct, total, pct, coins }]
+   משמש למנוע ההמלצות.
+   ------------------------------------------------------------ */
+async function getStudentHistory(name) {
+  const clean = (name || "").trim();
+  if (!clean) return [];
+
+  if (!USE_SUPABASE) {
+    const db = lsLoad();
+    return db.results
+      .filter(r => (r.studentName || "").trim() === clean)
+      .map(r => {
+        const ans = r.answers || [];
+        const correct = ans.filter(a => a.isCorrect).length;
+        const total = ans.length;
+        return {
+          code: r.gameCode || "", title: r.gameCode || "", subject: r.subject || "",
+          grade: r.studentGrade || "", topic: r.topic || "",
+          correct, total, pct: total ? Math.round(correct / total * 100) : null,
+          coins: r.totalCoins || 0
+        };
+      });
+  }
+
+  const students = await sbSelect("students?full_name=eq." + enc(clean) + "&select=id");
+  if (!students.length) return [];
+  const ids = students.map(s => s.id).join(",");
+  const sessions = await sbSelect(
+    "game_sessions?student_id=in.(" + ids + ")&select=game_id,correct_answers,wrong_answers,total_coins,finished_at"
+  );
+  if (!sessions.length) return [];
+  const gameIds = [...new Set(sessions.map(s => s.game_id).filter(Boolean))];
+  const games = gameIds.length
+    ? await sbSelect("learning_games?id=in.(" + gameIds.join(",") + ")&select=id,game_code,title,subject_id,grade_id,topic_id")
+    : [];
+  return sessions.map(s => {
+    const g = games.find(x => x.id === s.game_id) || {};
+    const correct = s.correct_answers || 0, wrong = s.wrong_answers || 0;
+    const total = correct + wrong;
+    return {
+      code: g.game_code || "", title: g.title || "", subject: subjectName(g.subject_id) || "",
+      grade: gradeName(g.grade_id) || "", topic: topicNameById(g.topic_id) || "",
+      correct, total, pct: total ? Math.round(correct / total * 100) : null,
+      coins: s.total_coins || 0
+    };
+  });
+}
+
+/* ------------------------------------------------------------
    listGames() - רשימת כל המשחקים הפעילים (לבחירה במסך "בחר משחק").
    מחזיר: [{ code, title, grade, gradeOrder, subject, topic }]
    ------------------------------------------------------------ */

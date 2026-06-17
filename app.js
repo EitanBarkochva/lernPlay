@@ -1013,6 +1013,121 @@ async function showPsycho() {
 }
 
 /* ============================================================
+   ✨ משחקים מומלצים אישית — לפי פרופיל הילד וההתקדמות
+   ============================================================ */
+function showRecommend() {
+  showScreen("recommendScreen");
+  // מילוי רשימת הכיתות
+  const sel = document.getElementById("recoGrade");
+  if (sel && !sel.options.length) {
+    sel.innerHTML = "<option value=''>בחר/י כיתה</option>";
+    (appConfig.grades || []).forEach(g => sel.add(new Option("כיתה " + g, g)));
+  }
+  // מילוי אוטומטי אם תלמיד כבר מחובר
+  if (typeof student !== "undefined" && student) {
+    if (student.name)  document.getElementById("recoName").value = student.name;
+    if (student.grade) document.getElementById("recoGrade").value = student.grade;
+  }
+  document.getElementById("recoSummary").innerHTML = "";
+  document.getElementById("recoList").innerHTML = "";
+}
+
+function recoCard(g) {
+  return `
+    <button class="game-card" onclick="pickGame('${escapeAttr(g.code)}','${escapeAttr(g.grade)}')">
+      <span class="game-card-topic">${escapeHtml(g.topic || g.title)}</span>
+      <span class="game-card-sub">${escapeHtml(g.subject)} · ${escapeHtml(g.code)}</span>
+      <span class="game-card-play">▶ שחק</span>
+    </button>`;
+}
+function recoBucket(title, subtitle, games) {
+  if (!games.length) return "";
+  return `<h3 class="browse-grade">${title}</h3>` +
+    (subtitle ? `<p class="muted" style="margin:-2px 0 8px">${subtitle}</p>` : "") +
+    `<div class="browse-grid">` + games.map(recoCard).join("") + `</div>`;
+}
+
+async function getRecommendations() {
+  const name = document.getElementById("recoName").value.trim();
+  let grade = document.getElementById("recoGrade").value;
+  const summary = document.getElementById("recoSummary");
+  const list = document.getElementById("recoList");
+  if (!name) { alert("נא להזין שם"); return; }
+  list.innerHTML = "<p class='muted'>טוען המלצות...</p>"; summary.innerHTML = "";
+
+  let games, history;
+  try {
+    games = await listGames();
+    history = await getStudentHistory(name);
+  } catch (e) { console.error(e); list.innerHTML = "<p class='muted'>שגיאה בטעינת ההמלצות.</p>"; return; }
+
+  // משחקים "רגילים" בלבד (לא Bands) להמלצות לפי כיתה
+  const normal = games.filter(g => !isBandGame(g));
+  // אם לא נבחרה כיתה — מנסים להסיק מההיסטוריה
+  if (!grade && history.length) {
+    const gc = {}; history.forEach(h => { if (h.grade) gc[h.grade] = (gc[h.grade] || 0) + 1; });
+    grade = Object.keys(gc).sort((a, b) => gc[b] - gc[a])[0] || "";
+  }
+
+  const playedCodes = new Set(history.filter(h => h.code).map(h => h.code));
+
+  // ביצועים לפי מקצוע
+  const perSub = {};
+  history.forEach(h => {
+    if (!h.subject || h.total == null || h.total === 0) return;
+    const e = perSub[h.subject] || { correct: 0, total: 0 };
+    e.correct += h.correct; e.total += h.total; perSub[h.subject] = e;
+  });
+  const subPct = {}; Object.keys(perSub).forEach(s => subPct[s] = Math.round(perSub[s].correct / perSub[s].total * 100));
+  const weakSubjects = Object.keys(subPct).filter(s => subPct[s] < 70);
+  const strongSubjects = Object.keys(subPct).filter(s => subPct[s] >= 85);
+
+  // סיכום פרופיל
+  if (history.length) {
+    const totalCoins = history.reduce((a, h) => a + (h.coins || 0), 0);
+    let txt = `שיחקת ${history.length} משחקים · אספת ${totalCoins} מטבעות 💰`;
+    if (strongSubjects.length) txt += ` · חזק/ה ב: ${strongSubjects.join(", ")} 💪`;
+    if (weakSubjects.length) txt += ` · כדאי לחזק: ${weakSubjects.join(", ")}`;
+    summary.innerHTML = `<div class="reco-profile">👤 <b>${escapeHtml(name)}</b>${grade ? " · כיתה " + escapeHtml(grade) : ""}<br>${txt}</div>`;
+  } else {
+    summary.innerHTML = `<div class="reco-profile">👤 <b>${escapeHtml(name)}</b>${grade ? " · כיתה " + escapeHtml(grade) : ""}<br>עדיין אין היסטוריית משחקים — הנה כמה משחקים מצוינים להתחלה!</div>`;
+  }
+
+  const gradeGames = grade ? normal.filter(g => g.grade === grade) : normal;
+  const take = (arr, n) => arr.slice(0, n);
+  let html = "";
+
+  // 1) חיזוק לפי מקצועות חלשים
+  if (weakSubjects.length) {
+    const weakGames = gradeGames.filter(g => weakSubjects.includes(g.subject));
+    const unplayedWeak = weakGames.filter(g => !playedCodes.has(g.code));
+    const pick = (unplayedWeak.length ? unplayedWeak : weakGames);
+    html += recoBucket("💪 כדאי לחזק", "תרגול נוסף במקצועות שבהם אפשר להשתפר", take(pick, 6));
+  }
+
+  // 2) מומלצים לכיתה — חדשים שעוד לא שיחקת, מקצועות שעוד לא ניסית קודם
+  const unplayed = gradeGames.filter(g => !playedCodes.has(g.code));
+  const triedSubjects = new Set(Object.keys(perSub));
+  const fresh = unplayed.filter(g => !triedSubjects.has(g.subject));
+  const restUnplayed = unplayed.filter(g => triedSubjects.has(g.subject));
+  const reco2 = take([...fresh, ...restUnplayed], 8);
+  html += recoBucket(history.length ? "⭐ מומלצים לכיתה שלך" : "⭐ מומלצים להתחלה",
+    grade ? ("משחקים חדשים לכיתה " + grade) : "", reco2);
+
+  // 3) אתגר הבא — כיתה מעל, במקצועות חזקים
+  if (strongSubjects.length && grade) {
+    const gi = (appConfig.grades || []).indexOf(grade);
+    const next = gi >= 0 ? (appConfig.grades || [])[gi + 1] : null;
+    if (next) {
+      const challenge = normal.filter(g => g.grade === next && strongSubjects.includes(g.subject));
+      html += recoBucket("🚀 מוכן/ה לאתגר הבא?", "כיתה " + next + " — במקצועות שאתה חזק בהם", take(challenge, 6));
+    }
+  }
+
+  list.innerHTML = html || "<p class='muted'>לא נמצאו המלצות מתאימות. נסו לבחור כיתה.</p>";
+}
+
+/* ============================================================
    אנגלית - Bands (אוצר מילים רשמי)
    ============================================================ */
 async function showBands() {

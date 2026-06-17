@@ -502,6 +502,13 @@ h3 { margin: 12px 0; color: #243746; }
 .fb-status.ok { color: #27ae60; }
 .fb-status.err { color: #e74c3c; }
 
+/* פרופיל בהמלצות אישיות */
+.reco-profile {
+  background: linear-gradient(135deg, #fff0f6, #f3e8ff); border: 1px solid #f0c6e0;
+  border-radius: 16px; padding: 14px 18px; margin-bottom: 14px; font-weight: 600; line-height: 1.7;
+  box-shadow: 0 3px 12px rgba(232,67,147,.12);
+}
+
 /* כרטיס בחינה — כפתורי התחלה + ייצוא PDF */
 .exam-card { cursor: default; }
 .exam-card:hover { transform: none; border-color: #e8edf2; box-shadow: 0 3px 10px rgba(0,0,0,.06); }

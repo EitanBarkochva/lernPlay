@@ -26,6 +26,7 @@
     <button class="big-btn indigo" onclick="showBands()">📘 אנגלית - Bands<br><small>אוצר מילים I / II / III</small></button>
     <button class="big-btn dark"   onclick="showExams()">📝 מבחנים<br><small>בחר בחינה + טיימר</small></button>
     <button class="big-btn teal2"  onclick="showPrograms()">🎓 תוכניות עולה<br><small>מוכנים לשנה הבאה</small></button>
+    <button class="big-btn pink"   onclick="showRecommend()">✨ משחקים מומלצים לי<br><small>לפי הפרופיל וההתקדמות</small></button>
     <button class="big-btn purple"  onclick="showPsycho()">🧠 פסיכומטרי לילדים<br><small>חשיבה והיגיון · כיתות א–ו</small></button>
     <button class="big-btn blue"   onclick="showStudentLogin()">🕹️ כניסה עם קוד<br><small>לתלמיד</small></button>
     <button class="big-btn purple" onclick="showQuizOnly()">📝 שאלות בלי משחק</button>
@@ -645,6 +646,22 @@
     <div class="fb-status" id="adminLoginStatus"></div>
     <button class="btn green big" onclick="adminLogin()">🔓 כניסה</button>
   </div>
+</div>
+
+<!-- ============ משחקים מומלצים אישית ============ -->
+<div id="recommendScreen" class="screen">
+  <button class="back-btn" onclick="showScreen('homeScreen')">⬅ חזרה</button>
+  <h2>✨ משחקים מומלצים לי</h2>
+  <div class="form-card">
+    <p class="muted">מלאו את הפרטים ונמליץ על המשחקים הכי מתאימים — לפי הכיתה וההתקדמות שלכם.</p>
+    <div class="row">
+      <div><label>שם הילד/ה</label><input type="text" id="recoName" placeholder="השם שלך" autocomplete="off"></div>
+      <div><label>כיתה</label><select id="recoGrade"></select></div>
+    </div>
+    <button class="btn green big" onclick="getRecommendations()">✨ קבל המלצות</button>
+  </div>
+  <div id="recoSummary"></div>
+  <div id="recoList"></div>
 </div>
 
 <!-- ============ ניהול תקלות / הערות (מנהל בלבד) ============ -->
