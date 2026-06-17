@@ -862,7 +862,7 @@ async function seedDemoGame() {
     // LRI/PDI עוטפים את הביטוי המתמטי כדי שיוצג שמאל-לימין נכון בתוך טקסט עברי
     questions: (function () {
       const L = "⁦", P = "⁩";   // Left-to-Right Isolate / Pop Directional Isolate
-      const ex = e => "כמה זה " + L + e + P + "?";
+      const ex = e => L + e + " =" + P;   // למשל: 9 - 2 =
       return [
         mkQ("qd1",  ex("2 + 3"),                              "5", ["4", "6", "7"],  "2 ועוד 3 הם 5"),
         mkQ("qd2",  ex("5 + 4"),                              "9", ["8", "10", "7"], "5 ועוד 4 הם 9"),
