@@ -70,6 +70,7 @@ async function populateGameCodes() {
 
 /* ----- פתיחת מסכי כניסה עם רענון רשימת הקודים ----- */
 function showStudentLogin() { populateGameCodes(); showScreen("studentLoginScreen"); }
+function openTeacherReports() { populateGameCodes(); showScreen("teacherReportsScreen"); }
 function showQuizOnly()     { populateGameCodes(); showScreen("quizOnlyScreen"); }
 
 /* ----- מילוי הרשימות הנפתחות -----

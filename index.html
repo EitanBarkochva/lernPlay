@@ -31,7 +31,7 @@
     <button class="big-btn purple" onclick="showQuizOnly()">📝 שאלות בלי משחק</button>
     <button class="big-btn red-btn" onclick="showScreen('duelHomeScreen')">⚔️ תחרות 1 על 1<br><small>אונליין מול חבר</small></button>
     <button class="big-btn gold-btn" onclick="showLeaderboard()">🏆 טבלת אלופים</button>
-    <button class="big-btn orange" onclick="showScreen('teacherReportsScreen')">📊 צפייה בדוחות</button>
+    <button class="big-btn orange" onclick="openTeacherReports()">📊 צפייה בדוחות</button>
     <button class="big-btn pink"   onclick="showScreen('viewQuestionsScreen')">👀 צפייה בשאלות</button>
     <button class="big-btn dark"   onclick="showScreen('helpScreen')">❓ עזרה<br><small>איך משתמשים באפליקציה</small></button>
     <button class="big-btn dark" onclick="showFeedbackList()">🔒 ניהול תקלות<br><small>למנהל בלבד</small></button>
@@ -465,8 +465,8 @@
   <button class="back-btn" onclick="showScreen('homeScreen')">⬅ חזרה</button>
   <h2>📊 צפייה בדוחות</h2>
   <div class="form-card">
-    <label>קוד משחק</label>
-    <input type="text" id="teacherCode" placeholder="DEMO-A1">
+    <label>בחר משחק <small class="muted">(בחרו מהרשימה הנפתחת או חפשו לפי קוד / שם)</small></label>
+    <input type="text" id="teacherCode" list="gameCodesDatalist" placeholder="הקלידו או בחרו משחק..." autocomplete="off">
     <button class="btn blue" onclick="showTeacherReports()">הצג דוחות</button>
   </div>
   <div id="teacherReportsResult" class="table-wrap"></div>
