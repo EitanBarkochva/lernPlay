@@ -1546,6 +1546,47 @@ function openQuestion(index) {
   currentAttempts = 0;
   renderQuestion(activeGame.questions[index]);
   document.getElementById("questionModal").classList.add("show");
+  startQuestionTimer();   // ⏱️ ספירה לאחור — 10 שניות לענות
+}
+
+/* ----- שעון 10 שניות לכרטיס השאלה (במשחק) ----- */
+let questionTimer = null, qTimeLeft = 0;
+const Q_SECONDS = 10;
+
+function startQuestionTimer() {
+  clearQuestionTimer();
+  qTimeLeft = Q_SECONDS;
+  updateQuestionTimer();
+  questionTimer = setInterval(() => {
+    qTimeLeft--;
+    updateQuestionTimer();
+    if (qTimeLeft <= 0) { clearQuestionTimer(); onQuestionTimeout(); }
+  }, 1000);
+}
+function clearQuestionTimer() {
+  if (questionTimer) { clearInterval(questionTimer); questionTimer = null; }
+}
+function updateQuestionTimer() {
+  const el = document.getElementById("qTimerBar");
+  if (!el) return;
+  const pct = Math.max(0, qTimeLeft / Q_SECONDS * 100);
+  const color = qTimeLeft > 5 ? "#27ae60" : qTimeLeft > 2 ? "#f39c12" : "#e74c3c";
+  el.innerHTML = `<div class="timer-bar"><div class="timer-fill" style="width:${pct}%;background:${color}"></div></div>
+    <span class="timer-num">⏱️ ${qTimeLeft}</span>`;
+}
+function onQuestionTimeout() {
+  const q = activeGame.questions[currentQuestionIndex];
+  const fb = document.getElementById("questionFeedback");
+  if (fb) { fb.className = "feedback wrong"; fb.textContent = "⏰ נגמר הזמן! הכרטיס נעלם"; }
+  // נועלים את כפתורי התשובה
+  document.querySelectorAll("#answerArea button, #answerArea input").forEach(b => b.disabled = true);
+  if (typeof playWrong === "function") playWrong();
+  recordAnswer(q, "(לא נענה בזמן)", false, 0);
+  setTimeout(() => {
+    closeQuestionModal();
+    if (quizMode) nextQuizQuestion();
+    else if (activeEngine) activeEngine.resume(true);   // הכרטיס "נצרך" וממשיכים
+  }, 1000);
 }
 
 /* ----- ציור השאלה בתוך החלון הקופץ ----- */
@@ -1590,6 +1631,7 @@ function submitChoice(val) {
    6. בדיקת תשובה
    ============================================================ */
 function checkAnswer(answer) {
+  clearQuestionTimer();   // ענו בזמן — עוצרים את השעון
   const q = activeGame.questions[currentQuestionIndex];
   currentAttempts++;
   const isCorrect = normalize(answer) === normalize(q.correctAnswer);
@@ -1657,6 +1699,7 @@ function recordAnswer(q, answer, isCorrect, coins) {
 }
 
 function closeQuestionModal() {
+  clearQuestionTimer();
   document.getElementById("questionModal").classList.remove("show");
 }
 
