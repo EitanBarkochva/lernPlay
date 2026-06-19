@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>מסע המטבעות הלימודי - דף פרסום לחיץ</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: 'Heebo', Arial, sans-serif;
+      background: linear-gradient(180deg, #d9f2ff 0%, #f8fbff 45%, #eaf7ef 100%);
+      color: #12315f;
+    }
+    .page {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 22px;
+    }
+    .poster-link {
+      width: min(980px, 100%);
+      text-decoration: none;
+      color: inherit;
+      display: block;
+    }
+    .poster {
+      overflow: hidden;
+      border-radius: 34px;
+      background: #ffffff;
+      border: 7px solid #ffffff;
+      box-shadow: 0 24px 70px rgba(16, 51, 96, 0.24);
+      cursor: pointer;
+    }
+    .hero {
+      position: relative;
+      min-height: 380px;
+      padding: 36px 36px 120px;
+      background:
+        radial-gradient(circle at 12% 18%, rgba(255,255,255,.95) 0 38px, transparent 39px),
+        radial-gradient(circle at 22% 12%, rgba(255,255,255,.9) 0 28px, transparent 29px),
+        radial-gradient(circle at 84% 20%, rgba(255,255,255,.9) 0 42px, transparent 43px),
+        linear-gradient(180deg, #7bd5ff 0%, #bfefff 55%, #b9e58c 100%);
+    }
+    h1 {
+      margin: 0;
+      text-align: center;
+      line-height: 1.05;
+      font-size: clamp(40px, 8vw, 86px);
+      font-weight: 900;
+      letter-spacing: -1px;
+      color: #0a2d74;
+      text-shadow: 0 5px 0 #fff, 0 8px 18px rgba(0,0,0,.12);
+    }
+    h1 span { color: #f05a28; display: block; }
+    .subtitle {
+      margin: 16px auto 0;
+      text-align: center;
+      font-size: clamp(19px, 3vw, 31px);
+      font-weight: 800;
+      color: #173f7f;
+    }
+    .badges {
+      display: flex;
+      justify-content: center;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-top: 28px;
+    }
+    .badge {
+      min-width: 132px;
+      padding: 16px 18px;
+      border-radius: 20px;
+      color: white;
+      text-align: center;
+      font-size: 22px;
+      font-weight: 900;
+      box-shadow: 0 8px 0 rgba(0,0,0,.16), inset 0 2px 0 rgba(255,255,255,.35);
+    }
+    .badge small { display: block; font-size: 30px; line-height: 1; }
+    .b1 { background: #2488d8; }
+    .b2 { background: #f4aa22; }
+    .b3 { background: #4caf50; }
+    .b4 { background: #8255cf; }
+    .game-floor {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 105px;
+      background: linear-gradient(#64c85a 0 28px, #83511f 29px 100%);
+      border-top: 6px solid rgba(255,255,255,.6);
+    }
+    .coin {
+      position: absolute;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 30%, #fff29a 0 10%, #ffd849 11% 45%, #f6a500 46% 100%);
+      border: 3px solid #d78a00;
+      box-shadow: 0 5px 0 rgba(0,0,0,.12);
+    }
+    .c1 { right: 20%; bottom: 130px; }
+    .c2 { right: 31%; bottom: 175px; }
+    .c3 { left: 26%; bottom: 155px; }
+    .question-block {
+      position: absolute;
+      right: 47%;
+      bottom: 112px;
+      width: 68px;
+      height: 68px;
+      border-radius: 14px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(#ffcf47, #ee9323);
+      border: 4px solid #d27616;
+      color: white;
+      font-size: 44px;
+      font-weight: 900;
+      text-shadow: 0 3px 0 #b45b12;
+      box-shadow: 0 10px 0 rgba(0,0,0,.16);
+    }
+    .hero-kid {
+      position: absolute;
+      right: 34px;
+      bottom: 66px;
+      width: 170px;
+      height: 170px;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 12px 0 rgba(0,0,0,.14);
+      display: grid;
+      place-items: center;
+      font-size: 86px;
+      border: 6px solid rgba(255,255,255,.75);
+    }
+    .section {
+      padding: 28px 30px;
+      background: #fff;
+    }
+    .section-title {
+      width: max-content;
+      max-width: 100%;
+      margin: 0 auto 20px;
+      padding: 10px 32px;
+      border-radius: 16px;
+      background: #0c4f9c;
+      color: white;
+      font-size: clamp(28px, 4vw, 42px);
+      font-weight: 900;
+      box-shadow: 0 8px 0 rgba(0,0,0,.12);
+    }
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+    }
+    .card {
+      background: #ffffff;
+      border: 3px solid #d8e8ff;
+      border-radius: 24px;
+      padding: 22px;
+      min-height: 150px;
+      box-shadow: 0 8px 25px rgba(30, 74, 137, .08);
+    }
+    .num {
+      display: inline-grid;
+      place-items: center;
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: #0d4d9b;
+      color: white;
+      font-size: 27px;
+      font-weight: 900;
+      margin-left: 10px;
+    }
+    .card h3 {
+      display: inline;
+      margin: 0;
+      font-size: 28px;
+      color: #0d3f86;
+      font-weight: 900;
+    }
+    .card p {
+      margin: 12px 0 0;
+      font-size: 20px;
+      line-height: 1.45;
+      color: #243b61;
+      font-weight: 600;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      margin-top: 18px;
+    }
+    .panel {
+      border-radius: 24px;
+      overflow: hidden;
+      border: 3px solid #dbe8ff;
+      background: #fff;
+      box-shadow: 0 10px 28px rgba(30, 74, 137, .08);
+    }
+    .panel h2 {
+      margin: 0;
+      padding: 14px 20px;
+      color: white;
+      font-size: 30px;
+      font-weight: 900;
+      text-align: center;
+    }
+    .green h2 { background: #189447; }
+    .purple h2 { background: #773bbf; }
+    .orange h2 { background: #f07b21; }
+    .blue h2 { background: #0969c2; }
+    .teal h2 { background: #079b99; }
+    .panel-content { padding: 22px; font-size: 21px; font-weight: 700; line-height: 1.7; }
+    ul { margin: 0; padding: 0 24px 0 0; }
+    li { margin: 7px 0; }
+    .chips {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+    .chip {
+      padding: 11px 14px;
+      border-radius: 999px;
+      background: #eff7ff;
+      border: 2px solid #cce3ff;
+      font-size: 21px;
+      font-weight: 900;
+      text-align: center;
+    }
+    .wide { grid-column: 1 / -1; background: #e5fbff; }
+    .features {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+      margin-top: 18px;
+    }
+    .emoji {
+      font-size: 56px;
+      display: block;
+      margin-bottom: 8px;
+      text-align: center;
+    }
+    .cta {
+      padding: 34px 30px 38px;
+      background: linear-gradient(135deg, #073078, #0b62b2 58%, #06275e);
+      color: white;
+      text-align: center;
+      position: relative;
+    }
+    .cta h2 {
+      margin: 0;
+      font-size: clamp(36px, 6vw, 70px);
+      line-height: 1.1;
+      color: #ffdb3d;
+      font-weight: 900;
+      text-shadow: 0 4px 0 rgba(0,0,0,.18);
+    }
+    .cta p {
+      margin: 13px 0 0;
+      font-size: clamp(22px, 3vw, 34px);
+      font-weight: 900;
+    }
+    .url-box {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      direction: ltr;
+      margin-top: 20px;
+      padding: 15px 24px;
+      border-radius: 18px;
+      background: #fff;
+      color: #092f6a;
+      font-size: clamp(18px, 3vw, 30px);
+      font-weight: 900;
+      box-shadow: 0 8px 0 rgba(0,0,0,.18);
+    }
+    .bottom-line {
+      margin-top: 24px;
+      font-size: 34px;
+      font-weight: 900;
+    }
+    .click-note {
+      margin: 16px 0 0;
+      color: #dff5ff;
+      font-size: 19px;
+      font-weight: 700;
+    }
+    @media (max-width: 760px) {
+      .page { padding: 10px; }
+      .hero { padding: 28px 18px 105px; min-height: 360px; }
+      .hero-kid { width: 120px; height: 120px; font-size: 64px; right: 18px; }
+      .steps, .grid, .features { grid-template-columns: 1fr; }
+      .section { padding: 22px 15px; }
+      .chips { grid-template-columns: 1fr; }
+      .badge { min-width: 118px; font-size: 20px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <a class="poster-link" href="https://eitanbarkochva.github.io/lernPlay/" target="_blank" rel="noopener" aria-label="מעבר לאתר המשחק הלימודי">
+      <article class="poster">
+        <section class="hero">
+          <h1>משחק לימודי שהופך <span>שאלות להרפתקה!</span></h1>
+          <p class="subtitle">המורה כותב שאלות — התלמיד משחק, עונה וצובר מטבעות</p>
+          <div class="badges" aria-hidden="true">
+            <div class="badge b1"><small>❔</small>שאלות</div>
+            <div class="badge b2"><small>🪙</small>מטבעות</div>
+            <div class="badge b3"><small>🪜</small>שלבים</div>
+            <div class="badge b4"><small>🏆</small>הצלחה</div>
+          </div>
+          <div class="hero-kid" aria-hidden="true">🏃‍♂️</div>
+          <div class="coin c1" aria-hidden="true"></div>
+          <div class="coin c2" aria-hidden="true"></div>
+          <div class="coin c3" aria-hidden="true"></div>
+          <div class="question-block" aria-hidden="true">?</div>
+          <div class="game-floor" aria-hidden="true"></div>
+        </section>
+
+        <section class="section">
+          <h2 class="section-title">איך זה עובד?</h2>
+          <div class="steps">
+            <div class="card">
+              <span class="num">1</span><h3>יוצרים משחק</h3>
+              <p>המורה או ההורה מזין שאלות, תרגילים או מילים באנגלית.</p>
+            </div>
+            <div class="card">
+              <span class="num">2</span><h3>מקבלים קוד</h3>
+              <p>בסיום מתקבל קוד משחק ייחודי לשליחה לתלמידים.</p>
+            </div>
+            <div class="card">
+              <span class="num">3</span><h3>התלמיד משחק</h3>
+              <p>נכנס עם שם, כיתה וקוד — ומשחק בעולם לימודי מהנה.</p>
+            </div>
+          </div>
+
+          <div class="grid">
+            <div class="panel green">
+              <h2>מה קורה במשחק?</h2>
+              <div class="panel-content">
+                <ul>
+                  <li>פוגשים שאלות במהלך המשחק</li>
+                  <li>תשובה נכונה = מטבעות</li>
+                  <li>מתקדמים שלב אחרי שלב</li>
+                  <li>לומדים תוך כדי הנאה</li>
+                </ul>
+              </div>
+            </div>
+            <div class="panel purple">
+              <h2>מתאים לכל מקצוע ולכל גיל</h2>
+              <div class="panel-content chips">
+                <div class="chip wide">כיתות א׳–ו׳</div>
+                <div class="chip">מתמטיקה</div>
+                <div class="chip">אנגלית</div>
+                <div class="chip">עברית</div>
+                <div class="chip">מדעים</div>
+                <div class="chip">מחשבים</div>
+                <div class="chip">פיזיקה</div>
+                <div class="chip wide">ועוד...</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="features">
+            <div class="panel orange">
+              <h2>יצירת שאלות בעזרת AI</h2>
+              <div class="panel-content"><span class="emoji">🤖</span>מבקשים מה-AI ליצור שאלות לפי מקצוע, כיתה, נושא ורמת קושי.</div>
+            </div>
+            <div class="panel blue">
+              <h2>דוחות למורה ולהורה</h2>
+              <div class="panel-content"><span class="emoji">📊</span>רואים כמה שאלות כל תלמיד ענה, כמה צדק, וכמה מטבעות צבר.</div>
+            </div>
+            <div class="panel teal">
+              <h2>יש גם מצב אורח</h2>
+              <div class="panel-content"><span class="emoji">🎮</span>בוחרים מקצוע, כיתה ונושא — ומתחילים לשחק בלי קוד.</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="cta">
+          <h2>להתחלת המשחק</h2>
+          <p>לחצו על התמונה ותיכנסו ישר לאתר</p>
+          <div class="url-box">🌐 eitanbarkochva.github.io/lernPlay/</div>
+          <div class="bottom-line">במקום עוד דף עבודה — יוצרים משחק</div>
+          <div class="click-note">מסע המטבעות הלימודי · משחקים. לומדים. מתקדמים.</div>
+        </section>
+      </article>
+    </a>
+  </main>
+</body>
+</html>
