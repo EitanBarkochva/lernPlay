@@ -1494,7 +1494,8 @@ async function startGame() {
   student = {
     name: name, grade: grade || found.grade,
     parentEmail: (document.getElementById("parentEmail") || {}).value?.trim() || "",
-    teacherEmail: (document.getElementById("teacherEmail") || {}).value?.trim() || ""
+    teacherEmail: (document.getElementById("teacherEmail") || {}).value?.trim() || "",
+    timerOn: (document.getElementById("timerEnabled") || { checked: true }).checked
   };
   studentAnswers = [];
   currentAttempts = 0;
@@ -1549,13 +1550,25 @@ function openQuestion(index) {
   startQuestionTimer();   // ⏱️ ספירה לאחור — 10 שניות לענות
 }
 
-/* ----- שעון 10 שניות לכרטיס השאלה (במשחק) ----- */
-let questionTimer = null, qTimeLeft = 0;
-const Q_SECONDS = 10;
+/* ----- שעון אופציונלי לכרטיס השאלה (10 שניות, ולכיתות הגבוהות 15) ----- */
+let questionTimer = null, qTimeLeft = 0, qTotalSecs = 10;
+const HIGH_GRADES = ["ד", "ה", "ו", "ז", "ח", "ט", "י", "יא", "יב"];
+
+function questionSeconds() {
+  const g = (typeof student !== "undefined" && student) ? student.grade : "";
+  return HIGH_GRADES.includes(g) ? 15 : 10;
+}
 
 function startQuestionTimer() {
   clearQuestionTimer();
-  qTimeLeft = Q_SECONDS;
+  const el = document.getElementById("qTimerBar");
+  // השעון אופציונלי — כבוי או במצב quiz: לא מציגים ולא סופרים
+  if (quizMode || !(typeof student !== "undefined" && student && student.timerOn)) {
+    if (el) el.innerHTML = "";
+    return;
+  }
+  qTotalSecs = questionSeconds();
+  qTimeLeft = qTotalSecs;
   updateQuestionTimer();
   questionTimer = setInterval(() => {
     qTimeLeft--;
@@ -1569,8 +1582,8 @@ function clearQuestionTimer() {
 function updateQuestionTimer() {
   const el = document.getElementById("qTimerBar");
   if (!el) return;
-  const pct = Math.max(0, qTimeLeft / Q_SECONDS * 100);
-  const color = qTimeLeft > 5 ? "#27ae60" : qTimeLeft > 2 ? "#f39c12" : "#e74c3c";
+  const pct = Math.max(0, qTimeLeft / qTotalSecs * 100);
+  const color = qTimeLeft > qTotalSecs * 0.5 ? "#27ae60" : qTimeLeft > qTotalSecs * 0.2 ? "#f39c12" : "#e74c3c";
   el.innerHTML = `<div class="timer-bar"><div class="timer-fill" style="width:${pct}%;background:${color}"></div></div>
     <span class="timer-num">⏱️ ${qTimeLeft}</span>`;
 }
