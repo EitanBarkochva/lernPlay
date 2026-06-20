@@ -12,7 +12,13 @@
 <body>
 
 <button id="soundToggle" class="sound-toggle" onclick="toggleSound()" title="צליל מופעל/מושתק" aria-label="הפעלת/השתקת צליל">🔊</button>
-<button id="feedbackBtn" class="feedback-btn" onclick="openFeedback()" title="דיווח על באג או הצעת שיפור" aria-label="דיווח על באג או הצעת שיפור">🐞</button>
+<button id="feedbackBtn" class="feedback-btn" onclick="openFeedback()" title="דיווח על תקלה / טעות / הערה" aria-label="דיווח על תקלה או הערה">
+  <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M10.3 3.6 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.6a2 2 0 0 0-3.4 0Z"/>
+    <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+  </svg>
+  <span>דיווח</span>
+</button>
 
 <!-- ============ 1. דף בית ============ -->
 <div id="homeScreen" class="screen active">
