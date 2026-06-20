@@ -279,6 +279,15 @@ h3 { margin: 12px 0; color: #243746; }
 .answer-option { background: linear-gradient(160deg, #3aa0e6, #1f6aa3); font-size: 1.15rem; }
 .answer-option:hover { filter: saturate(1.1) brightness(1.05); }
 
+/* כפתור הקראה (קריין אנגלית) */
+.speak-btn {
+  border: none; background: #eaf4ff; color: #1f6aa3; border-radius: 50%;
+  width: 40px; height: 40px; font-size: 19px; cursor: pointer; vertical-align: middle;
+  margin-right: 8px; box-shadow: 0 2px 6px rgba(0,0,0,.12); transition: transform .1s, background .1s;
+}
+.speak-btn:hover { background: #d6eaff; }
+.speak-btn:active { transform: scale(.9); }
+
 /* שעון בכרטיס השאלה */
 .q-timer { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
 .q-timer:empty { display: none; }

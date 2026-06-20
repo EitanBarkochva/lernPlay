@@ -1347,8 +1347,9 @@ function renderExamQuestion() {
     answerHtml = shuffle([q.correctAnswer, ...q.wrongAnswers]).map(o =>
       `<button class="btn answer-option exam-opt" data-val="${escapeAttr(o)}" onclick="examAnswer('${escapeAttr(o)}')">${escapeHtml(o)}</button>`).join("");
   }
+  const examWord = englishWordFromText(q.text);
   document.getElementById("examQuestionBox").innerHTML =
-    `<h2 class="question-text">${escapeHtml(q.text)}</h2>
+    `<h2 class="question-text">${escapeHtml(q.text)}${speakerBtnHtml(examWord)}</h2>
      <div class="answer-area">${answerHtml}</div>
      <div class="feedback" id="examFeedback"></div>`;
   if (q.type === "open") setTimeout(() => document.getElementById("examInput")?.focus(), 100);
@@ -1548,6 +1549,7 @@ function openQuestion(index) {
   renderQuestion(activeGame.questions[index]);
   document.getElementById("questionModal").classList.add("show");
   startQuestionTimer();   // ⏱️ ספירה לאחור — 10 שניות לענות
+  if (currentSpeakWord) setTimeout(() => speakEnglish(currentSpeakWord), 350);   // 🔊 הקראה אוטומטית באנגלית
 }
 
 /* ----- שעון אופציונלי לכרטיס השאלה (10 שניות, ולכיתות הגבוהות 15) ----- */
@@ -1602,9 +1604,34 @@ function onQuestionTimeout() {
   }, 1000);
 }
 
+/* ----- קריין אנגלית (Text-to-Speech, ללא ספריות) ----- */
+let currentSpeakWord = "";
+function englishWordFromText(text) {
+  const m = (text || "").match(/["“”']([^"“”']{1,40})["“”']/);
+  if (m && /[A-Za-z]/.test(m[1])) return m[1];
+  return "";
+}
+function speakerBtnHtml(word) {
+  if (!word) return "";
+  return ` <button type="button" class="speak-btn" onclick="speakEnglish('${escapeAttr(word)}')" aria-label="הקראת המילה באנגלית" title="האזנה למילה">🔊</button>`;
+}
+function speakEnglish(word) {
+  try {
+    if (!("speechSynthesis" in window) || !word) return;
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(word);
+    u.lang = "en-US"; u.rate = 0.9; u.pitch = 1;
+    const voices = window.speechSynthesis.getVoices() || [];
+    const v = voices.find(x => /^en[-_]/i.test(x.lang));
+    if (v) u.voice = v;
+    window.speechSynthesis.speak(u);
+  } catch (e) {}
+}
+
 /* ----- ציור השאלה בתוך החלון הקופץ ----- */
 function renderQuestion(q) {
-  document.getElementById("questionText").textContent = q.text;
+  currentSpeakWord = englishWordFromText(q.text);
+  document.getElementById("questionText").innerHTML = escapeHtml(q.text) + speakerBtnHtml(currentSpeakWord);
   document.getElementById("questionFeedback").textContent = "";
   const answerArea = document.getElementById("answerArea");
 
