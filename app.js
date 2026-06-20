@@ -1391,6 +1391,8 @@ function examAnswer(val) {
 
   // צליל מותאם
   if (correct) playCorrect(); else playWrong();
+  // חיזוק חיובי — הקראת המילה באנגלית בתשובה נכונה
+  if (correct) { const w = englishWordFromText(q.text); if (w) setTimeout(() => speakEnglish(w), 350); }
 
   // מעבר לשאלה הבאה
   setTimeout(() => { examIndex++; renderExamQuestion(); }, correct ? 950 : 1700);
@@ -1685,6 +1687,9 @@ function checkAnswer(answer) {
 
     feedback.className = "feedback correct";
     feedback.textContent = "כל הכבוד! 🎉 קיבלת " + coins + " מטבעות זהב";
+
+    // חיזוק חיובי — הקראת המילה באנגלית שוב
+    if (currentSpeakWord) speakEnglish(currentSpeakWord);
 
     // שמירת התשובה לדוח
     recordAnswer(q, answer, true, coins);
@@ -2097,7 +2102,7 @@ async function viewQuestions() {
 
   const html = game.questions.map((q, i) => `
     <div class="q-view">
-      <p><b>שאלה ${i + 1}:</b> ${escapeHtml(q.text)}</p>
+      <p><b>שאלה ${i + 1}:</b> ${escapeHtml(q.text)}${speakerBtnHtml(englishWordFromText(q.text))}</p>
       <p class="answer-line">תשובה נכונה: <b>${escapeHtml(q.correctAnswer)}</b>
         ${q.wrongAnswers.length ? " | אפשרויות שגויות: " + q.wrongAnswers.map(escapeHtml).join(", ") : ""}</p>
       ${q.explanation ? `<p class="muted">הסבר: ${escapeHtml(q.explanation)}</p>` : ""}
