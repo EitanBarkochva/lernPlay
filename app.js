@@ -1512,9 +1512,9 @@ async function startGame() {
 let lastGameStyle = "mario";
 function launchGameEngine(style) {
   lastGameStyle = style;
-  const engines = { mario: MarioGame, pacman: PacmanGame, spaceship: SpaceshipGame, maze: MazeGame, bubbles: BubblesGame };
+  const engines = { mario: MarioGame, pacman: PacmanGame, spaceship: SpaceshipGame, maze: MazeGame, bubbles: BubblesGame, temple: TempleRunGame };
   activeEngine = engines[style] || MarioGame;
-  // מריו ובועות משתמשים בפקדי שמאל/ימין/פעולה; השאר ב-D-pad
+  // מריו ובועות משתמשים בפקדי שמאל/ימין/פעולה; השאר (כולל ריצה אינסופית) ב-D-pad
   const useMarioControls = (style === "mario" || style === "bubbles");
 
   showScreen("marioGameScreen");
@@ -1529,7 +1529,8 @@ function launchGameEngine(style) {
     pacman: "מקלדת: חיצים לכל הכיוונים. אסוף נקודות, הגע ל-❓ כדי לענות, והיזהר מהרוחות!",
     spaceship: "מקלדת: חיצים לכל הכיוונים. אסוף כוכבים, טוס ל-❓ כדי לענות, והתחמק ממטאורים!",
     maze: "מקלדת: חיצים לכל הכיוונים. ענה על כל ה-❓ כדי לפתוח את היציאה 🏁 והגע אליה!",
-    bubbles: "מקלדת: חיצים ימינה/שמאלה לכיוון התותח, רווח לירייה. פגע ב-❓ וענה נכון כדי לפוצץ בועות!"
+    bubbles: "מקלדת: חיצים ימינה/שמאלה לכיוון התותח, רווח לירייה. פגע ב-❓ וענה נכון כדי לפוצץ בועות!",
+    temple: "מקלדת: ◀▶ להחלפת מסלול, ▲/רווח לקפיצה, ▼ להחלקה. אסוף מטבעות, הימנע ממכשולים, וענה על שערי ה-❓!"
   };
   document.getElementById("controlsHint").textContent = hints[style] || hints.mario;
 
