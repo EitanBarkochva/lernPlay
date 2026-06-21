@@ -1456,7 +1456,7 @@ function showExamResult(correct, total, pct, timedOut) {
   mountEmailPanel("examEmail", examRecipients, examGame.creatorEmail || "");
 
   showScreen("examResultScreen");
-  if (pass) { setTimeout(() => launchConfetti(pct >= 90 ? 3200 : 2400), 250); playVictory(); }   // 🎉🔊 חגיגה בהצלחה
+  if (pass) { setTimeout(() => launchConfetti(2200), 200); playVictory(); }   // 🎉🔊 חגיגה קצרה בהצלחה
 }
 
 function buildExamEmailBody(correct, total, pct) {
@@ -1504,19 +1504,23 @@ async function startGame() {
   currentAttempts = 0;
   quizMode = false;
 
-  // בחירת סוג המשחק - אותן שאלות, מנוע שונה
   const style = (document.getElementById("gameStyle") || {}).value || "mario";
+  launchGameEngine(style);
+}
+
+/* ----- הפעלת מנוע המשחק (משותף ל"התחל" ול"שחק שוב") ----- */
+let lastGameStyle = "mario";
+function launchGameEngine(style) {
+  lastGameStyle = style;
   const engines = { mario: MarioGame, pacman: PacmanGame, spaceship: SpaceshipGame, maze: MazeGame, bubbles: BubblesGame };
   activeEngine = engines[style] || MarioGame;
   // מריו ובועות משתמשים בפקדי שמאל/ימין/פעולה; השאר ב-D-pad
   const useMarioControls = (style === "mario" || style === "bubbles");
 
-  // עוברים למסך המשחק ומציגים את פקדי המגע המתאימים
   showScreen("marioGameScreen");
-  document.getElementById("gameTitleLabel").textContent = found.title + " — " + found.subject;
+  document.getElementById("gameTitleLabel").textContent = activeGame.title + " — " + activeGame.subject;
   document.getElementById("marioControls").style.display = useMarioControls ? "flex" : "none";
   document.getElementById("pacmanControls").style.display = useMarioControls ? "none" : "flex";
-  // סימון סוג הפקדים — לשמירת מקום מתאים בפלאפון מאוזן (D-pad גבוה יותר)
   document.getElementById("marioGameScreen").classList.toggle("dpad-mode", !useMarioControls);
   const jb = document.getElementById("jumpBtn");
   if (jb) jb.textContent = (style === "bubbles") ? "🚀 ירה" : "⬆ קפיצה";
@@ -1530,16 +1534,27 @@ async function startGame() {
   document.getElementById("controlsHint").textContent = hints[style] || hints.mario;
 
   const canvas = document.getElementById("gameCanvas");
-  // התאמת גודל הקנבס (מריו משתמש בגודל הזה; פאקמן מגדיר גודל משלו)
   canvas.width = Math.min(900, window.innerWidth - 20);
   canvas.height = 420;
 
   activeEngine.init({
     canvas: canvas,
-    game: found,
+    game: activeGame,
     onQuestion: openQuestion,           // נקרא כשנוגעים בתיבת שאלה
     onLevelComplete: finishMarioGame    // נקרא בסיום כל השלבים
   });
+
+  // מסירים פוקוס מכפתורים כדי שמקשי המקלדת (חיצים/רווח) יגיעו למשחק
+  if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+}
+
+/* ----- שחק שוב — אותו משחק, אותו סגנון ----- */
+function playAgain() {
+  if (!activeGame) { showScreen("homeScreen"); return; }
+  studentAnswers = [];
+  currentAttempts = 0;
+  quizMode = false;
+  launchGameEngine(lastGameStyle || "mario");
 }
 
 /* ============================================================
@@ -1855,8 +1870,8 @@ function showStudentReport(result, correctCount, wrongCount) {
   mountEmailPanel("reportEmail", recipients, game.creatorEmail || "");
 
   showScreen("studentReportScreen");
-  setTimeout(() => launchConfetti(), 250);   // 🎉 חגיגה!
-  playVictory();                              // 🔊 צליל ניצחון
+  setTimeout(() => launchConfetti(2200), 200);   // 🎉 חגיגה קצרה (≈2.4 שניות)
+  playVictory();                                 // 🔊 צליל ניצחון
 }
 
 function buildStudentEmailBody(game, result, correctCount, wrongCount) {
