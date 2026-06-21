@@ -129,6 +129,8 @@ const TempleRunGame = (function () {
         else objects.push({ type: "high", lane: lane, z: 1 });
       }
     }
+    // עצי קישוט בצידי הדרך (ויזואלי בלבד; אין להם lane ולכן לא מתנגשים)
+    if (frame % 18 === 0) objects.push({ type: "tree", side: Math.random() < 0.5 ? -1 : 1, z: 1, variant: (Math.random() * 3) | 0 });
 
     // קידום אובייקטים + טיפול בהגעה לשחקן
     for (let i = objects.length - 1; i >= 0; i--) {
@@ -174,35 +176,53 @@ const TempleRunGame = (function () {
 
   /* ============================== ציור ============================== */
   function draw() {
-    // שמיים
-    const sky = ctx.createLinearGradient(0, 0, 0, horizonY + 40);
-    sky.addColorStop(0, "#7ec8ff"); sky.addColorStop(1, "#dff3ff");
-    ctx.fillStyle = sky; ctx.fillRect(0, 0, canvas.width, canvas.height);
-    // דשא
-    ctx.fillStyle = "#5bbf52"; ctx.fillRect(0, horizonY, canvas.width, canvas.height - horizonY);
+    // שמיים — שחר ג'ונגל
+    const sky = ctx.createLinearGradient(0, 0, 0, horizonY + 30);
+    sky.addColorStop(0, "#ffd28a"); sky.addColorStop(0.55, "#ffb59c"); sky.addColorStop(1, "#cfe9b0");
+    ctx.fillStyle = sky; ctx.fillRect(0, 0, canvas.width, horizonY + 30);
+    // שמש
+    ctx.fillStyle = "rgba(255,248,205,0.95)";
+    ctx.beginPath(); ctx.arc(cx + 120, horizonY - 14, 24, 0, Math.PI * 2); ctx.fill();
+    // קו עצים רחוק (סילואטה)
+    drawTreeline();
 
-    // כביש (טרפז עם פרספקטיבה)
+    // קרקע ג'ונגל
+    const grnd = ctx.createLinearGradient(0, horizonY, 0, canvas.height);
+    grnd.addColorStop(0, "#3f8f3a"); grnd.addColorStop(1, "#286224");
+    ctx.fillStyle = grnd; ctx.fillRect(0, horizonY, canvas.width, canvas.height - horizonY);
+
+    // כביש אבן (טרפז עם פרספקטיבה)
     const nH = roadHalf(0), fH = roadHalf(1);
-    ctx.fillStyle = "#caa46a";
+    const road = ctx.createLinearGradient(0, horizonY, 0, groundNearY);
+    road.addColorStop(0, "#cda978"); road.addColorStop(1, "#b78f54");
+    ctx.fillStyle = road;
     ctx.beginPath();
     ctx.moveTo(cx - nH, groundNearY); ctx.lineTo(cx - fH, horizonY);
     ctx.lineTo(cx + fH, horizonY); ctx.lineTo(cx + nH, groundNearY);
     ctx.closePath(); ctx.fill();
+
+    // שלבי אבן נעים על הכביש — תחושת מהירות
+    const step = 0.085, off = (frame * speed * 0.7) % step;
+    ctx.strokeStyle = "rgba(90,62,28,0.4)"; ctx.lineWidth = 2;
+    for (let z = off; z < 1; z += step) {
+      const h = roadHalf(z), y = groundNearY - (groundNearY - horizonY) * z;
+      ctx.beginPath(); ctx.moveTo(cx - h, y); ctx.lineTo(cx + h, y); ctx.stroke();
+    }
     // שולי הכביש
-    ctx.strokeStyle = "#8a6d3b"; ctx.lineWidth = 3;
+    ctx.strokeStyle = "#7a5e30"; ctx.lineWidth = 4;
     ctx.beginPath(); ctx.moveTo(cx - nH, groundNearY); ctx.lineTo(cx - fH, horizonY); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(cx + nH, groundNearY); ctx.lineTo(cx + fH, horizonY); ctx.stroke();
 
-    // קווי הפרדה בין מסלולים (מנוקדים, נעים)
-    ctx.strokeStyle = "rgba(255,255,255,0.7)"; ctx.lineWidth = 2;
+    // קווי הפרדה בין מסלולים
+    ctx.strokeStyle = "rgba(255,245,210,0.55)"; ctx.lineWidth = 2;
     ctx.setLineDash([14, 16]); ctx.lineDashOffset = -(frame * 4) % 30;
     for (const lx of [-0.5, 0.5]) {
-      const nearX = cx + lx * laneOff * 2, farX = cx;
-      ctx.beginPath(); ctx.moveTo(nearX, groundNearY); ctx.lineTo(cx + (farX - cx) * 1 + lx * 0, horizonY); ctx.stroke();
+      const nearX = cx + lx * laneOff * 2;
+      ctx.beginPath(); ctx.moveTo(nearX, groundNearY); ctx.lineTo(cx, horizonY); ctx.stroke();
     }
     ctx.setLineDash([]);
 
-    // אובייקטים מהרחוק לקרוב
+    // אובייקטים מהרחוק לקרוב (כולל עצי צד)
     const sorted = objects.slice().sort((a, b) => b.z - a.z);
     for (const o of sorted) drawObject(o);
 
@@ -217,30 +237,67 @@ const TempleRunGame = (function () {
     ctx.globalAlpha = 1;
   }
 
+  function drawTreeline() {
+    ctx.fillStyle = "#2f6b34";
+    for (let x = -10; x <= canvas.width + 10; x += 24) {
+      const r = 13 + ((Math.sin(x * 0.7) * 0.5 + 0.5) * 12);
+      ctx.beginPath(); ctx.arc(x, horizonY + 2, r, Math.PI, 0); ctx.fill();
+    }
+    ctx.fillStyle = "rgba(20,60,30,0.5)";
+    ctx.fillRect(0, horizonY, canvas.width, 3);
+  }
+
   function drawObject(o) {
+    if (o.type === "tree") { drawTree(o); return; }
     const p = project(o.z, o.lane);
     if (o.type === "coin") {
-      const r = 11 * p.scale;
-      ctx.fillStyle = "#FFC400"; ctx.beginPath(); ctx.arc(p.x, p.y - 16 * p.scale, r, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = "#FFE680"; ctx.beginPath(); ctx.arc(p.x, p.y - 16 * p.scale, r * 0.55, 0, Math.PI * 2); ctx.fill();
+      const r = 12 * p.scale, cyc = Math.abs(Math.sin(frame * 0.14 + o.z * 9));
+      const rw = Math.max(1.5, cyc * r + r * 0.25), cyy = p.y - 18 * p.scale;
+      ctx.fillStyle = "#b8860b"; ctx.beginPath(); ctx.ellipse(p.x, cyy, rw, r, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "#FFC400"; ctx.beginPath(); ctx.ellipse(p.x, cyy, Math.max(1, rw - 2), r - 2, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "#FFF0A6"; ctx.beginPath(); ctx.ellipse(p.x - rw * 0.3, cyy - r * 0.25, Math.max(1, rw * 0.3), r * 0.4, 0, 0, Math.PI * 2); ctx.fill();
     } else if (o.type === "low") {
-      const w = 46 * p.scale, h = 20 * p.scale;
-      ctx.fillStyle = "#7a4a1e"; ctx.fillRect(p.x - w / 2, p.y - h, w, h);
-      ctx.strokeStyle = "#5a3414"; ctx.lineWidth = 2; ctx.strokeRect(p.x - w / 2, p.y - h, w, h);
+      const w = 48 * p.scale, h = 24 * p.scale;
+      ctx.fillStyle = "#857a6a"; ctx.fillRect(p.x - w / 2, p.y - h, w, h);
+      ctx.fillStyle = "#a59a87"; ctx.fillRect(p.x - w / 2, p.y - h, w, 5 * p.scale);
+      ctx.strokeStyle = "#5d5446"; ctx.lineWidth = 2; ctx.strokeRect(p.x - w / 2, p.y - h, w, h);
+      ctx.beginPath(); ctx.moveTo(p.x, p.y - h); ctx.lineTo(p.x, p.y); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(p.x - w / 2, p.y - h / 2); ctx.lineTo(p.x + w / 2, p.y - h / 2); ctx.stroke();
     } else if (o.type === "high") {
-      const w = 50 * p.scale, h = 12 * p.scale, gap = 42 * p.scale;
-      ctx.fillStyle = "#b03030"; ctx.fillRect(p.x - w / 2, p.y - gap - h, w, h);
-      ctx.fillStyle = "#7a1f1f"; ctx.fillRect(p.x - 4 * p.scale, p.y - gap - h, 8 * p.scale, gap);
+      const w = 56 * p.scale, h = 13 * p.scale, gap = 40 * p.scale;
+      ctx.fillStyle = "#6b4423"; ctx.fillRect(p.x - w / 2, p.y - gap - h, w, h);
+      ctx.fillStyle = "#3aa54a";
+      for (let k = -1; k <= 1; k++) { ctx.beginPath(); ctx.arc(p.x + k * 18 * p.scale, p.y - gap - h, 8 * p.scale, 0, Math.PI * 2); ctx.fill(); }
+      ctx.fillStyle = "#6b4423";
+      ctx.fillRect(p.x - w / 2, p.y - gap - h, 5 * p.scale, gap); ctx.fillRect(p.x + w / 2 - 5 * p.scale, p.y - gap - h, 5 * p.scale, gap);
     } else if (o.type === "gate") {
-      const half = roadHalf(o.z), top = p.y - 70 * p.scale;
-      ctx.fillStyle = "#6C5CE7"; ctx.fillRect(cx - half, top, half * 2, 26 * p.scale);
-      ctx.fillStyle = "#fff"; ctx.font = "bold " + Math.round(26 * p.scale) + "px Arial";
-      ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText("?", cx, top + 13 * p.scale);
+      const half = roadHalf(o.z), sc = p.scale, top = p.y - 80 * sc;
+      // עמודי אבן
+      ctx.fillStyle = "#9b8458"; ctx.fillRect(cx - half, top, 13 * sc, p.y - top); ctx.fillRect(cx + half - 13 * sc, top, 13 * sc, p.y - top);
+      ctx.fillStyle = "#82704a"; ctx.fillRect(cx - half, top, 13 * sc, 6 * sc); ctx.fillRect(cx + half - 13 * sc, top, 13 * sc, 6 * sc);
+      // קורת אבן עליונה
+      ctx.fillStyle = "#7a6843"; ctx.fillRect(cx - half, top, half * 2, 22 * sc);
+      // שלט שאלה
+      const pw = 50 * sc; ctx.fillStyle = "#6C5CE7"; ctx.fillRect(cx - pw / 2, top - 3, pw, 28 * sc);
+      ctx.fillStyle = "#4a3fb0"; ctx.fillRect(cx - pw / 2, top + 22 * sc - 3, pw, 3 * sc);
+      ctx.fillStyle = "#fff"; ctx.font = "bold " + Math.round(24 * sc) + "px Arial";
+      ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText("?", cx, top + 11 * sc);
       ctx.textBaseline = "alphabetic";
-      // עמודי השער
-      ctx.fillStyle = "#4a3fb0"; ctx.fillRect(cx - half, top, 7 * p.scale, p.y - top);
-      ctx.fillStyle = "#4a3fb0"; ctx.fillRect(cx + half - 7 * p.scale, top, 7 * p.scale, p.y - top);
     }
+  }
+
+  function drawTree(o) {
+    const z = o.z, sc = 1 - 0.8 * z;
+    const y = groundNearY - (groundNearY - horizonY) * z;
+    const x = cx + o.side * (roadHalf(z) + 46 * (1 - z));
+    // גזע
+    ctx.fillStyle = "#6b4423"; ctx.fillRect(x - 3 * sc, y - 32 * sc, 6 * sc, 32 * sc);
+    // צמרת
+    const greens = ["#3aa54a", "#2f8f3f", "#46b85a"];
+    ctx.fillStyle = greens[o.variant % 3];
+    ctx.beginPath(); ctx.arc(x, y - 36 * sc, 17 * sc, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x - 11 * sc, y - 27 * sc, 12 * sc, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x + 11 * sc, y - 27 * sc, 12 * sc, 0, Math.PI * 2); ctx.fill();
   }
 
   function drawRunner() {
