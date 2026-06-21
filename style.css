@@ -292,6 +292,18 @@ h3 { margin: 12px 0; color: #243746; }
 .q-timer { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
 .q-timer:empty { display: none; }
 
+/* בורר דמויות (אווטאר) */
+.avatar-picker { display: flex; flex-wrap: wrap; gap: 8px; margin: 6px 0 4px; }
+.avatar-opt {
+  width: 48px; height: 48px; border: 2px solid #d7e0ea; border-radius: 12px; background: #fff;
+  font-size: 26px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  overflow: hidden; padding: 0; transition: transform .1s, border-color .1s;
+}
+.avatar-opt:hover { transform: scale(1.08); }
+.avatar-opt.selected { border-color: #27ae60; background: #eafaf0; box-shadow: 0 0 0 3px rgba(39,174,96,.2); }
+.avatar-opt.avatar-upload { background: #eef6ff; }
+.avatar-thumb { width: 100%; height: 100%; object-fit: cover; }
+
 /* שורת תיבת סימון (טיימר אופציונלי וכו') */
 .check-row { display: flex; align-items: center; gap: 8px; font-weight: 700; color: #3b4a57; margin-top: 14px; cursor: pointer; }
 .check-row input[type="checkbox"] { width: 20px; height: 20px; cursor: pointer; flex: none; }

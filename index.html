@@ -394,6 +394,9 @@
       <option value="bubbles">🎯 בועות (תותח)</option>
       <option value="temple">🏃 ריצה אינסופית (טמפל ראן)</option>
     </select>
+    <label>בחר דמות 🎭 <small class="muted">(או העלה תמונה משלך)</small></label>
+    <div id="avatarPicker" class="avatar-picker"></div>
+    <input type="file" id="avatarUpload" accept="image/*" style="display:none" onchange="onAvatarUpload(event)">
     <label>📧 שליחת תוצאות בסיום <small class="muted">(לא חובה — מלאו הורה, מורה, או שניהם)</small></label>
     <input type="email" id="parentEmail" placeholder="אימייל הורה (אופציונלי)" autocomplete="off">
     <input type="email" id="teacherEmail" placeholder="אימייל מורה (אופציונלי)" autocomplete="off">

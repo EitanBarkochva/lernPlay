@@ -619,6 +619,7 @@ const MarioGame = (function () {
     // הבהוב אחרי פגיעה - מדלגים על חלק מהפריימים
     if (playerHurt > 0 && Math.floor(frame / 4) % 2 === 0) return;
     const p = player;
+    if (window.drawPlayerAvatar && window.drawPlayerAvatar(ctx, p.x + p.w / 2, p.y + p.h / 2, p.h + 8)) return;
 
     // אנימציית מעיכה/מתיחה (squash & stretch)
     let sx = 1, sy = 1;

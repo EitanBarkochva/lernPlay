@@ -194,6 +194,7 @@ const MazeGame = (function () {
   }
 
   function drawHero() {
+    if (window.drawPlayerAvatar && window.drawPlayerAvatar(ctx, p.x, p.y, TILE - 1)) return;
     const x = p.x, y = p.y, r = TILE / 2 - 3;
     ctx.fillStyle = "#27ae60"; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = "#1e8449"; ctx.beginPath(); ctx.arc(x, y - r + 4, r * 0.7, Math.PI, 0); ctx.fill();   // כובע

@@ -182,6 +182,7 @@ const SpaceshipGame = (function () {
   function drawShip() {
     if (hurtT > 0 && Math.floor(frame / 4) % 2 === 0) return;
     const s = ship;
+    if (window.drawPlayerAvatar && window.drawPlayerAvatar(ctx, s.x, s.y, s.h + 18)) return;
     // להבת מנוע
     ctx.fillStyle = "#ff8c00";
     ctx.beginPath(); ctx.moveTo(s.x - s.w / 2, s.y - 5); ctx.lineTo(s.x - s.w / 2 - 8 - Math.random() * 5, s.y); ctx.lineTo(s.x - s.w / 2, s.y + 5); ctx.fill();

@@ -69,7 +69,82 @@ async function populateGameCodes() {
 }
 
 /* ----- פתיחת מסכי כניסה עם רענון רשימת הקודים ----- */
-function showStudentLogin() { populateGameCodes(); showScreen("studentLoginScreen"); }
+function showStudentLogin() { populateGameCodes(); buildAvatarPicker(); showScreen("studentLoginScreen"); }
+
+/* ============================================================
+   🎭 בחירת דמות לשחקן (אווטאר) + העלאת תמונה אישית
+   ============================================================ */
+const AVATARS = ["🐰", "🐱", "🐶", "🦊", "🐵", "🦄", "🤖", "🐯", "🐼", "🐸", "🦁", "🐧", "🐲", "🚀", "⭐"];
+let selectedAvatar = { type: "default" };
+let uploadedAvatarImg = null;
+
+function buildAvatarPicker() {
+  const c = document.getElementById("avatarPicker");
+  if (!c || c.dataset.built) return;
+  c.dataset.built = "1";
+  let html = '<button type="button" class="avatar-opt selected" data-type="default" onclick="selectAvatar(this)" title="דמות רגילה">🙂</button>';
+  AVATARS.forEach(e => { html += `<button type="button" class="avatar-opt" data-type="emoji" data-val="${e}" onclick="selectAvatar(this)">${e}</button>`; });
+  html += '<button type="button" class="avatar-opt avatar-upload" onclick="document.getElementById(\'avatarUpload\').click()" title="העלה תמונה">📷</button>';
+  c.innerHTML = html;
+}
+
+function selectAvatar(btn) {
+  document.querySelectorAll("#avatarPicker .avatar-opt").forEach(b => b.classList.remove("selected"));
+  btn.classList.add("selected");
+  selectedAvatar = (btn.dataset.type === "emoji") ? { type: "emoji", value: btn.dataset.val } : { type: "default" };
+}
+
+function onAvatarUpload(e) {
+  const f = e.target.files && e.target.files[0];
+  if (!f) return;
+  if (!/^image\//.test(f.type)) { alert("נא לבחור קובץ תמונה"); return; }
+  const reader = new FileReader();
+  reader.onload = () => {
+    const img = new Image();
+    img.onload = () => {
+      uploadedAvatarImg = img;
+      selectedAvatar = { type: "image" };
+      document.querySelectorAll("#avatarPicker .avatar-opt").forEach(b => b.classList.remove("selected"));
+      const ub = document.querySelector("#avatarPicker .avatar-upload");
+      if (ub) { ub.classList.add("selected"); ub.innerHTML = '<img class="avatar-thumb" src="' + img.src + '" alt="">'; }
+    };
+    img.onerror = () => alert("לא ניתן לטעון את התמונה");
+    img.src = reader.result;
+  };
+  reader.readAsDataURL(f);
+}
+
+/* נקרא ב-startGame: קובע את האווטאר הפעיל שכל המנועים מציירים */
+function applySelectedAvatar() {
+  if (selectedAvatar.type === "emoji") window.PLAYER_AVATAR = { type: "emoji", value: selectedAvatar.value };
+  else if (selectedAvatar.type === "image" && uploadedAvatarImg) window.PLAYER_AVATAR = { type: "image", img: uploadedAvatarImg };
+  else window.PLAYER_AVATAR = null;
+}
+
+/* מצויר ע"י כל מנועי המשחק במקום הדמות, אם נבחר אווטאר. מחזיר true אם צויר. */
+window.drawPlayerAvatar = function (ctx, cx, cy, size) {
+  const a = window.PLAYER_AVATAR;
+  if (!a) return false;
+  if (a.type === "emoji") {
+    ctx.save();
+    ctx.font = "bold " + Math.round(size) + "px Arial";
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillText(a.value, cx, cy);
+    ctx.restore();
+    return true;
+  }
+  if (a.type === "image" && a.img) {
+    const s = size;
+    ctx.save();
+    ctx.beginPath(); ctx.arc(cx, cy, s / 2, 0, Math.PI * 2); ctx.clip();
+    ctx.drawImage(a.img, cx - s / 2, cy - s / 2, s, s);
+    ctx.restore();
+    ctx.beginPath(); ctx.arc(cx, cy, s / 2, 0, Math.PI * 2);
+    ctx.strokeStyle = "#fff"; ctx.lineWidth = 2; ctx.stroke();
+    return true;
+  }
+  return false;
+};
 function openTeacherReports() { populateGameCodes(); showScreen("teacherReportsScreen"); }
 function showQuizOnly()     { populateGameCodes(); showScreen("quizOnlyScreen"); }
 
@@ -1503,6 +1578,8 @@ async function startGame() {
   studentAnswers = [];
   currentAttempts = 0;
   quizMode = false;
+
+  applySelectedAvatar();   // 🎭 קביעת הדמות שנבחרה
 
   const style = (document.getElementById("gameStyle") || {}).value || "mario";
   launchGameEngine(style);

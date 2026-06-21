@@ -308,6 +308,7 @@ const TempleRunGame = (function () {
     // צל
     ctx.fillStyle = "rgba(0,0,0,0.2)"; ctx.beginPath();
     ctx.ellipse(x, groundNearY + 2, 18, 6, 0, 0, Math.PI * 2); ctx.fill();
+    if (window.drawPlayerAvatar && window.drawPlayerAvatar(ctx, x, baseY - bodyH / 2 - 6, sliding ? 34 : 46)) return;
     // רגליים (מתנדנדות)
     if (!sliding) {
       const sw = Math.sin(player.runFrame) * 7;

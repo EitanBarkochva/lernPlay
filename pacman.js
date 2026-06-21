@@ -252,6 +252,7 @@ const PacmanGame = (function () {
 
   function drawPac() {
     if (hurtT > 0 && Math.floor(frame / 4) % 2 === 0) return;
+    if (window.drawPlayerAvatar && window.drawPlayerAvatar(ctx, pac.x, pac.y, TILE - 2)) return;
     const mouth = Math.abs(Math.sin(frame * 0.25)) * 0.32;       // פתיחת פה
     let ang = 0;
     if (pac.dir === "ArrowLeft") ang = Math.PI;
