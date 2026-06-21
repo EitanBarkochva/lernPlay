@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>🎰 רולטה רויאל — קזינו</title>
+<style>
+  :root{
+    --bg:#0a0e14; --panel:rgba(18,24,38,.82); --felt:#0b6b34; --felt2:#075227;
+    --gold:#e8c659; --gold-d:#b8902a; --red:#c0392b; --black:#15171c;
+    --green:#1e8c4f; --txt:#f3e9c8; --line:rgba(232,198,89,.35);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{
+    font-family:'Segoe UI',system-ui,Arial,sans-serif; color:var(--txt);
+    background:
+      radial-gradient(1200px 700px at 50% -10%, #1c2740 0%, transparent 60%),
+      radial-gradient(900px 600px at 50% 120%, #14250f 0%, transparent 55%),
+      var(--bg);
+    min-height:100%; overflow-x:hidden;
+  }
+  .wrap{max-width:1100px;margin:0 auto;padding:12px 12px 40px}
+
+  /* ---------- Header ---------- */
+  header{
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+    padding:12px 16px;margin-bottom:14px;border-radius:16px;
+    background:var(--panel);border:1px solid var(--line);
+    box-shadow:0 10px 30px rgba(0,0,0,.5);backdrop-filter:blur(8px);
+    position:sticky;top:8px;z-index:20;
+  }
+  .brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:20px;letter-spacing:.5px}
+  .brand .logo{font-size:26px;filter:drop-shadow(0 0 8px rgba(232,198,89,.6))}
+  .brand b{background:linear-gradient(180deg,#ffe9a8,#cda034);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .balance{
+    display:flex;align-items:center;gap:8px;font-weight:800;font-size:18px;
+    padding:8px 14px;border-radius:999px;
+    background:linear-gradient(180deg,#23304d,#141b2c);border:1px solid var(--line);
+  }
+  .balance .coin{width:22px;height:22px;border-radius:50%;
+    background:radial-gradient(circle at 35% 30%,#ffe9a8,#cda034 60%,#8a6a18);
+    box-shadow:inset 0 0 0 2px #fff4cf, 0 2px 4px rgba(0,0,0,.5);display:inline-block}
+  #balanceVal{min-width:46px;text-align:center;transition:color .2s}
+  .btn{
+    appearance:none;border:1px solid var(--line);cursor:pointer;font-weight:700;color:var(--txt);
+    background:linear-gradient(180deg,#2a3450,#161d2e);padding:9px 14px;border-radius:11px;
+    transition:transform .1s,box-shadow .2s,filter .2s;font-size:14px;white-space:nowrap}
+  .btn:hover{transform:translateY(-1px);box-shadow:0 5px 14px rgba(0,0,0,.4)}
+  .btn:active{transform:translateY(0)}
+  .btn.gold{background:linear-gradient(180deg,var(--gold),var(--gold-d));color:#1a1208;border-color:#ffe49a}
+  .btn.red{background:linear-gradient(180deg,#d04231,#7e1322);color:#fff;border-color:#ff8a7a}
+  .btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
+
+  /* ---------- Layout ---------- */
+  .game{display:grid;grid-template-columns:340px 1fr;gap:16px}
+  @media(max-width:880px){.game{grid-template-columns:1fr}}
+
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:18px;
+    box-shadow:0 12px 34px rgba(0,0,0,.45);backdrop-filter:blur(8px);padding:16px}
+
+  /* ---------- Wheel ---------- */
+  .wheelWrap{display:flex;flex-direction:column;align-items:center;gap:12px}
+  .wheelStage{position:relative;width:300px;height:300px}
+  #wheel{width:300px;height:300px;border-radius:50%;
+    box-shadow:0 0 0 10px #2a1206, 0 0 0 14px var(--gold-d),
+      0 18px 40px rgba(0,0,0,.6), inset 0 0 30px rgba(0,0,0,.5)}
+  .pointer{position:absolute;top:-6px;left:50%;transform:translateX(-50%);
+    width:0;height:0;border-left:13px solid transparent;border-right:13px solid transparent;
+    border-top:22px solid var(--gold);filter:drop-shadow(0 3px 3px rgba(0,0,0,.6));z-index:5}
+
+  .result{min-height:30px;text-align:center;font-weight:800;font-size:16px;height:30px;
+    display:flex;align-items:center;justify-content:center;gap:8px}
+  .result .chip{width:30px;height:30px;border-radius:50%;display:inline-flex;align-items:center;
+    justify-content:center;color:#fff;font-size:15px;border:2px solid rgba(255,255,255,.6)}
+  .net{font-size:14px;font-weight:700;height:18px}
+  .net.win{color:#7ee08a}.net.lose{color:#ff8a7a}
+
+  .spinRow{display:flex;gap:8px;width:100%}
+  .spinRow .btn{flex:1}
+  #spinBtn{font-size:17px;padding:13px;letter-spacing:.5px}
+
+  /* chip denominations */
+  .denoms{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:4px}
+  .deno{width:50px;height:50px;border-radius:50%;cursor:pointer;border:3px dashed rgba(255,255,255,.55);
+    display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;color:#fff;
+    position:relative;transition:transform .12s,box-shadow .2s;box-shadow:0 4px 10px rgba(0,0,0,.4)}
+  .deno:hover{transform:translateY(-3px)}
+  .deno.sel{outline:3px solid var(--gold);outline-offset:2px;transform:translateY(-3px) scale(1.06)}
+  .deno small{position:absolute;bottom:-18px;color:var(--txt);font-size:11px;font-weight:600}
+  .bet-summary{font-size:13px;text-align:center;opacity:.85;margin-top:18px}
+
+  /* ---------- Betting board ---------- */
+  .boardScroll{overflow-x:auto;padding-bottom:6px}
+  .board{direction:ltr;display:grid;gap:4px;min-width:560px;
+    grid-template-columns:46px repeat(12,1fr) 50px;
+    grid-template-rows:repeat(3,46px) 34px 40px;user-select:none}
+  .cell{position:relative;border-radius:7px;display:flex;align-items:center;justify-content:center;
+    font-weight:800;color:#fff;cursor:pointer;border:1px solid rgba(255,255,255,.18);
+    transition:filter .12s,transform .08s;font-size:16px}
+  .cell:hover{filter:brightness(1.25)}
+  .cell:active{transform:scale(.95)}
+  .cell.red{background:linear-gradient(160deg,#d44133,#9e2419)}
+  .cell.black{background:linear-gradient(160deg,#2a2d36,#111318)}
+  .cell.green{background:linear-gradient(160deg,#22a05c,#127a3e)}
+  .cell.zero{grid-row:1/4;grid-column:1;writing-mode:vertical-lr;transform:rotate(180deg);font-size:20px}
+  .cell.out{background:linear-gradient(160deg,#0f5e30,#0a4423);font-size:13px;font-weight:700}
+  .cell.col{grid-column:14;font-size:12px}
+  .cell .dot{position:absolute;inset:0;border-radius:7px;pointer-events:none}
+  .cell.redDot,.cell.blackDot{font-size:0}
+  .cell .diamond{width:20px;height:20px;transform:rotate(45deg);border-radius:3px;border:1px solid rgba(255,255,255,.5)}
+
+  /* placed chip badge */
+  .placed{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+    width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    font-size:12px;font-weight:800;color:#fff;border:2px dashed rgba(255,255,255,.85);
+    box-shadow:0 2px 6px rgba(0,0,0,.6);z-index:3;pointer-events:none;
+    animation:pop .2s ease}
+  @keyframes pop{from{transform:translate(-50%,-50%) scale(.3)}to{transform:translate(-50%,-50%) scale(1)}}
+
+  .winFlash{animation:flash 1.1s ease 2}
+  @keyframes flash{0%,100%{box-shadow:0 0 0 0 rgba(232,198,89,0)}50%{box-shadow:0 0 0 4px var(--gold),0 0 18px var(--gold)}}
+
+  /* ---------- Modal ---------- */
+  .overlay{position:fixed;inset:0;background:rgba(4,6,12,.78);backdrop-filter:blur(4px);
+    display:none;align-items:center;justify-content:center;z-index:100;padding:16px}
+  .overlay.show{display:flex}
+  .modal{width:min(440px,100%);background:linear-gradient(180deg,#16203a,#0d1322);
+    border:1px solid var(--gold);border-radius:20px;box-shadow:0 20px 70px rgba(0,0,0,.7);padding:22px;
+    animation:rise .3s ease}
+  @keyframes rise{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+  .modal h2{font-size:22px;margin-bottom:4px;text-align:center}
+  .modal .sub{text-align:center;opacity:.8;font-size:14px;margin-bottom:16px}
+  .rate{text-align:center;background:rgba(232,198,89,.12);border:1px solid var(--line);
+    border-radius:10px;padding:8px;margin-bottom:14px;font-weight:700;color:var(--gold)}
+  .packs{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .pack{cursor:pointer;border-radius:14px;padding:14px 10px;text-align:center;
+    background:linear-gradient(180deg,#22304e,#141d30);border:2px solid var(--line);
+    transition:transform .1s,border-color .2s}
+  .pack:hover{transform:translateY(-2px);border-color:var(--gold)}
+  .pack.best{border-color:var(--gold);position:relative}
+  .pack.best::after{content:'הכי משתלם';position:absolute;top:-10px;left:50%;transform:translateX(-50%);
+    background:var(--gold);color:#1a1208;font-size:10px;font-weight:800;padding:2px 8px;border-radius:8px}
+  .pack .amt{font-size:22px;font-weight:800;color:var(--gold)}
+  .pack .amt .coin{width:18px;height:18px;display:inline-block;vertical-align:-3px;border-radius:50%;
+    background:radial-gradient(circle at 35% 30%,#ffe9a8,#cda034 60%,#8a6a18)}
+  .pack .price{margin-top:6px;font-size:15px;font-weight:700}
+  .pack .bonus{font-size:11px;color:#7ee08a;margin-top:2px;height:14px}
+  .custom{display:flex;gap:8px;margin-top:14px}
+  .custom input{flex:1;background:#0c1322;border:1px solid var(--line);border-radius:10px;color:var(--txt);
+    padding:10px;font-size:15px;text-align:center;font-weight:700}
+  .disclaimer{text-align:center;font-size:11px;opacity:.55;margin-top:14px;line-height:1.5}
+  .modal .close{display:block;width:100%;margin-top:12px}
+
+  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(80px);
+    background:linear-gradient(180deg,#1d2740,#10182a);border:1px solid var(--gold);color:var(--txt);
+    padding:12px 22px;border-radius:14px;font-weight:700;z-index:200;opacity:0;transition:.35s;
+    box-shadow:0 10px 30px rgba(0,0,0,.6)}
+  .toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand"><span class="logo">🎰</span><span>רולטה <b>רויאל</b></span></div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <div class="balance"><span class="coin"></span><span id="balanceVal">0</span></div>
+      <button class="btn gold" id="buyBtn">💰 קנה ז'יטונים</button>
+    </div>
+  </header>
+
+  <div class="game">
+    <!-- ===== Wheel panel ===== -->
+    <div class="panel wheelWrap">
+      <div class="wheelStage">
+        <div class="pointer"></div>
+        <canvas id="wheel" width="600" height="600"></canvas>
+      </div>
+      <div class="result" id="result"></div>
+      <div class="net" id="net"></div>
+
+      <div class="spinRow">
+        <button class="btn red" id="spinBtn">🎯 סובב!</button>
+      </div>
+      <div class="spinRow">
+        <button class="btn" id="clearBtn">נקה הימורים</button>
+        <button class="btn" id="rebetBtn">חזור על הימור</button>
+      </div>
+
+      <div style="font-size:13px;opacity:.8;margin-top:6px">בחר ערך ז'יטון:</div>
+      <div class="denoms" id="denoms"></div>
+      <div class="bet-summary" id="betSummary">לא הונחו הימורים</div>
+    </div>
+
+    <!-- ===== Betting board ===== -->
+    <div class="panel">
+      <div class="boardScroll">
+        <div class="board" id="board"></div>
+      </div>
+      <div style="font-size:12px;opacity:.7;margin-top:12px;line-height:1.7">
+        💡 לחץ על מספר (תשלום 35:1), על צבע / זוגי-אי-זוגי / חצאים (1:1),
+        או על תריסר / טור (2:1). אפשר להניח כמה הימורים יחד.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Buy chips modal ===== -->
+<div class="overlay" id="shop">
+  <div class="modal">
+    <h2>💰 חנות הז'יטונים</h2>
+    <div class="sub" id="shopSub">בחר חבילה כדי להמשיך לשחק</div>
+    <div class="rate">השער: 100 ז'יטונים = 1 ₪</div>
+    <div class="packs" id="packs"></div>
+    <div class="custom">
+      <input type="number" id="customShekel" min="1" placeholder="סכום בשקלים">
+      <button class="btn gold" id="customBuy">קנה</button>
+    </div>
+    <div class="disclaimer">
+      ⚠️ אפליקציית הדגמה למשחק בלבד. אין כאן תשלום אמיתי וה"רכישה" היא וירטואלית.
+      הז'יטונים הם נקודות משחק חסרות ערך כספי.
+    </div>
+    <button class="btn close" id="closeShop">סגור</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ===================== נתוני רולטה ===================== */
+const ORDER=[0,32,15,19,4,21,2,25,17,34,6,27,13,36,11,30,8,23,10,5,24,16,33,1,20,14,31,9,22,18,29,7,28,12,35,3,26];
+const REDS=new Set([1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36]);
+const N=ORDER.length, STEP=Math.PI*2/N;
+const colorOf=n=>n===0?'green':(REDS.has(n)?'red':'black');
+const hexOf=n=>n===0?'#1e8c4f':(REDS.has(n)?'#c0392b':'#15171c');
+
+/* ===================== ארנק ===================== */
+const LS='roulette_balance_v1';
+let balance=parseInt(localStorage.getItem(LS)??'1000',10);
+if(!Number.isFinite(balance)) balance=1000;
+const balEl=document.getElementById('balanceVal');
+function saveBal(){localStorage.setItem(LS,String(balance));}
+function renderBal(flash){
+  balEl.textContent=balance.toLocaleString('he-IL');
+  if(flash){balEl.style.color=flash==='up'?'#7ee08a':'#ff8a7a';setTimeout(()=>balEl.style.color='',450);}
+  saveBal();
+}
+renderBal();
+
+/* ===================== ז'יטונים (ערכים) ===================== */
+const DENOS=[{v:1,c:'#dfe6ee',t:'#222'},{v:5,c:'#d04231',t:'#fff'},{v:25,c:'#2c7d46',t:'#fff'},
+  {v:100,c:'#222831',t:'#fff'},{v:500,c:'#7d3cc0',t:'#fff'}];
+let selDeno=5;
+const denomsEl=document.getElementById('denoms');
+DENOS.forEach(d=>{
+  const el=document.createElement('div');
+  el.className='deno'+(d.v===selDeno?' sel':'');
+  el.style.background=`radial-gradient(circle at 35% 30%, ${d.c}, ${shade(d.c,-30)})`;
+  el.style.color=d.t; el.textContent=d.v; el.dataset.v=d.v;
+  el.onclick=()=>{selDeno=d.v;document.querySelectorAll('.deno').forEach(x=>x.classList.toggle('sel',+x.dataset.v===selDeno));};
+  denomsEl.appendChild(el);
+});
+function shade(hex,p){const n=parseInt(hex.slice(1),16);let r=(n>>16)+p,g=((n>>8)&255)+p,b=(n&255)+p;
+  r=Math.max(0,Math.min(255,r));g=Math.max(0,Math.min(255,g));b=Math.max(0,Math.min(255,b));
+  return'#'+((r<<16)|(g<<8)|b).toString(16).padStart(6,'0');}
+
+/* ===================== לוח ההימורים ===================== */
+const board=document.getElementById('board');
+/* bets: key -> {amount, def}  def={test:(n)=>bool, pay:multiplier_total} */
+const bets={};
+let lastBets=null;
+
+const cellRegistry={}; // key -> {def, cellEl, label}  (לכל הימור אפשרי שנגע בו)
+function betKey(type,sel){return type+':'+(sel??'');}
+function addBet(type,sel,label,cellEl,def){
+  if(balance<selDeno){openShop(true);return;}
+  const key=betKey(type,sel);
+  cellRegistry[key]={def,cellEl,label};
+  if(!bets[key]) bets[key]={amount:0,def,cellEl,label};
+  bets[key].amount+=selDeno;
+  balance-=selDeno; renderBal('down');
+  drawPlaced(key); updateSummary();
+}
+function drawPlaced(key){
+  const b=bets[key]; if(!b)return;
+  let badge=b.cellEl.querySelector('.placed');
+  if(b.amount<=0){badge&&badge.remove();delete bets[key];updateSummary();return;}
+  if(!badge){badge=document.createElement('div');badge.className='placed';b.cellEl.appendChild(badge);}
+  // color by nearest deno
+  const d=[...DENOS].reverse().find(x=>b.amount>=x.v)||DENOS[0];
+  badge.style.background=`radial-gradient(circle at 35% 30%, ${d.c}, ${shade(d.c,-30)})`;
+  badge.style.color=d.t; badge.textContent=b.amount;
+}
+function clearBets(refund){
+  Object.values(bets).forEach(b=>{if(refund)balance+=b.amount; b.cellEl.querySelector('.placed')?.remove();});
+  for(const k in bets)delete bets[k];
+  if(refund)renderBal('up'); updateSummary();
+}
+function totalBet(){return Object.values(bets).reduce((s,b)=>s+b.amount,0);}
+function updateSummary(){
+  const t=totalBet(),c=Object.keys(bets).length;
+  document.getElementById('betSummary').textContent=
+    c?`סה"כ על השולחן: ${t.toLocaleString('he-IL')} ז'יטונים (${c} הימורים)`:'לא הונחו הימורים';
+  document.getElementById('spinBtn').disabled=!c;
+}
+
+/* ---- בניית תאים ---- */
+function makeCell(label,cls,type,sel,def){
+  const c=document.createElement('div');
+  c.className='cell '+cls; c.textContent=label;
+  c.onclick=()=>addBet(type,sel,label,c,def);
+  return c;
+}
+// 0
+board.appendChild(makeCell('0','green zero','straight',0,{test:n=>n===0,pay:36}));
+// numbers grid: top row 3,6..36 ; mid 2,5..35 ; bottom 1,4..34
+for(let row=0;row<3;row++){
+  for(let col=1;col<=12;col++){
+    const num=col*3-row; // row0->3,row1->2,row2->1 pattern
+    const c=makeCell(String(num),colorOf(num),'straight',num,{test:n=>n===num,pay:36});
+    c.style.gridRow=row+1; c.style.gridColumn=col+1;
+    board.appendChild(c);
+  }
+}
+// 2:1 columns (right)
+const colDefs=[
+  {label:'2:1',r:1,test:n=>n!==0&&n%3===0},
+  {label:'2:1',r:2,test:n=>n!==0&&n%3===2},
+  {label:'2:1',r:3,test:n=>n!==0&&n%3===1},
+];
+colDefs.forEach((cd,i)=>{
+  const c=makeCell(cd.label,'out col','column','c'+i,{test:cd.test,pay:3});
+  c.style.gridRow=cd.r; board.appendChild(c);
+});
+// dozens row (grid-row 4): spans columns 2-5, 6-9, 10-13
+const dozens=[['1-12',n=>n>=1&&n<=12],['13-24',n=>n>=13&&n<=24],['25-36',n=>n>=25&&n<=36]];
+dozens.forEach((dz,i)=>{
+  const c=makeCell(dz[0],'out','dozen','d'+i,{test:dz[1],pay:3});
+  c.style.gridRow=4; c.style.gridColumn=(2+i*4)+' / '+(6+i*4);
+  board.appendChild(c);
+});
+// outside even-money row (grid-row 5): six cells across columns 2-13
+const outs=[
+  ['1-18','low',n=>n>=1&&n<=18,'1-18'],
+  ['זוגי','even',n=>n!==0&&n%2===0,'EVEN'],
+  ['red','reddot',n=>REDS.has(n),'◆'],
+  ['black','blackdot',n=>n!==0&&!REDS.has(n),'◆'],
+  ['אי-זוגי','odd',n=>n%2===1,'ODD'],
+  ['19-36','high',n=>n>=19&&n<=36,'19-36'],
+];
+outs.forEach((o,i)=>{
+  const c=document.createElement('div');
+  c.className='cell out';
+  if(o[1]==='reddot'){const d=document.createElement('div');d.className='diamond';d.style.background='var(--red)';c.appendChild(d);}
+  else if(o[1]==='blackdot'){const d=document.createElement('div');d.className='diamond';d.style.background='var(--black)';c.appendChild(d);}
+  else c.textContent=o[0];
+  c.style.gridRow=5; c.style.gridColumn=(2+i*2)+' / '+(4+i*2);
+  c.onclick=()=>addBet(o[1],null,o[0],c,{test:o[2],pay:2});
+  board.appendChild(c);
+});
+
+/* ===================== ציור הגלגל ===================== */
+const cv=document.getElementById('wheel'),ctx=cv.getContext('2d');
+const CX=300,CY=300,RO=290,RI=150,RN=(RO+RI)/2;
+let wheelAngle=0, ballAngle=-Math.PI/2, ballR=RO-26, ballVisible=false;
+function drawWheel(){
+  ctx.clearRect(0,0,600,600);
+  // outer wood ring
+  ctx.save();ctx.translate(CX,CY);
+  // pockets
+  ctx.rotate(wheelAngle);
+  for(let i=0;i<N;i++){
+    const a0=i*STEP-Math.PI/2-STEP/2, a1=a0+STEP, n=ORDER[i];
+    ctx.beginPath();ctx.moveTo(0,0);
+    ctx.arc(0,0,RO,a0,a1);ctx.closePath();
+    ctx.fillStyle=hexOf(n);ctx.fill();
+    ctx.strokeStyle='rgba(232,198,89,.55)';ctx.lineWidth=1.5;ctx.stroke();
+    // number
+    const am=(a0+a1)/2;
+    ctx.save();ctx.rotate(am);ctx.translate(RN+30,0);ctx.rotate(Math.PI/2);
+    ctx.fillStyle='#fff';ctx.font='bold 26px Georgia';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(n,0,0);ctx.restore();
+  }
+  // inner hub
+  ctx.beginPath();ctx.arc(0,0,RI,0,Math.PI*2);
+  const g=ctx.createRadialGradient(-40,-40,20,0,0,RI);
+  g.addColorStop(0,'#6a4a22');g.addColorStop(1,'#2a1206');ctx.fillStyle=g;ctx.fill();
+  ctx.strokeStyle='#e8c659';ctx.lineWidth=4;ctx.stroke();
+  // turret cross
+  ctx.fillStyle='#e8c659';
+  for(let k=0;k<2;k++){ctx.save();ctx.rotate(k*Math.PI/2);
+    ctx.fillRect(-RI*0.78,-8,RI*1.56,16);ctx.restore();}
+  ctx.beginPath();ctx.arc(0,0,22,0,Math.PI*2);ctx.fillStyle='#ffe9a8';ctx.fill();
+  ctx.restore();
+
+  // ball (screen space, not rotating with wheel)
+  if(ballVisible){
+    const bx=CX+Math.cos(ballAngle)*ballR, by=CY+Math.sin(ballAngle)*ballR;
+    ctx.beginPath();ctx.arc(bx,by,13,0,Math.PI*2);
+    const bg=ctx.createRadialGradient(bx-4,by-4,2,bx,by,13);
+    bg.addColorStop(0,'#fff');bg.addColorStop(1,'#c9ccd2');ctx.fillStyle=bg;ctx.fill();
+    ctx.strokeStyle='rgba(0,0,0,.3)';ctx.lineWidth=1;ctx.stroke();
+  }
+}
+drawWheel();
+
+/* ===================== סיבוב ===================== */
+let spinning=false;
+const easeOut=t=>1-Math.pow(1-t,3);
+function spin(){
+  if(spinning)return;
+  if(totalBet()===0)return;
+  spinning=true; ballVisible=true;
+  document.getElementById('spinBtn').disabled=true;
+  document.getElementById('result').textContent='';
+  document.getElementById('net').textContent='';
+  document.querySelectorAll('.cell.winFlash').forEach(c=>c.classList.remove('winFlash'));
+  lastBets=Object.entries(bets).map(([k,b])=>({type:k.split(':')[0],amount:b.amount,key:k}));
+
+  const winIdx=Math.floor(Math.random()*N);
+  const winNum=ORDER[winIdx];
+  const turns=5+Math.floor(Math.random()*3);
+  const startA=wheelAngle;
+  // want pocket winIdx centered under top pointer (-PI/2): wheelAngle + (winIdx*STEP - PI/2) === -PI/2 + 2πk
+  const targetMod=(-(winIdx*STEP))% (Math.PI*2);
+  const targetA=startA + turns*Math.PI*2 + (((targetMod-(startA%(Math.PI*2)))%(Math.PI*2))+Math.PI*2)%(Math.PI*2);
+  const dur=4200, t0=performance.now();
+  const ballStart=performance.now();
+
+  function frame(now){
+    const t=Math.min((now-t0)/dur,1), e=easeOut(t);
+    wheelAngle=startA+(targetA-startA)*e;
+    // ball orbits opposite, decelerating, spiraling inward at the end
+    const bt=Math.min((now-ballStart)/dur,1);
+    ballAngle=-Math.PI/2 - (1-easeOut(bt))*(turns*1.6*Math.PI*2) ; // ends at top (-PI/2)
+    ballR=(RO-26) - easeOut(Math.max(0,(bt-0.6)/0.4))*(RO-26-(RN+18));
+    drawWheel();
+    if(t<1)requestAnimationFrame(frame);
+    else{wheelAngle=targetA;ballAngle=-Math.PI/2;ballR=RN+18;drawWheel();resolve(winNum);}
+  }
+  requestAnimationFrame(frame);
+}
+
+function resolve(winNum){
+  // payouts
+  let won=0, anyWin=false;
+  Object.values(bets).forEach(b=>{
+    if(b.def.test(winNum)){won+=b.amount*b.def.pay;anyWin=true;b.cellEl.classList.add('winFlash');}
+  });
+  const staked=totalBet();
+  balance+=won;
+  const net=won-staked;
+  renderBal(net>=0?'up':'down');
+
+  const res=document.getElementById('result');
+  res.innerHTML=`<span class="chip" style="background:${hexOf(winNum)}">${winNum}</span>
+    <span>יצא ${winNum} · ${winNum===0?'ירוק':(REDS.has(winNum)?'אדום':'שחור')}</span>`;
+  const netEl=document.getElementById('net');
+  netEl.className='net '+(net>=0?'win':'lose');
+  netEl.textContent=net>=0?`+${won.toLocaleString('he-IL')} ז'יטונים זכייה!`:`הפסדת ${staked.toLocaleString('he-IL')}`;
+
+  if(anyWin&&net>0) sound(880); else sound(160);
+
+  // clear placed chips (already staked)
+  Object.values(bets).forEach(b=>b.cellEl.querySelector('.placed')?.remove());
+  for(const k in bets)delete bets[k];
+  updateSummary();
+
+  spinning=false;
+  setTimeout(()=>{ if(balance<DENOS[0].v) openShop(true); },500);
+}
+
+/* ===================== כפתורים ===================== */
+document.getElementById('spinBtn').onclick=spin;
+document.getElementById('clearBtn').onclick=()=>!spinning&&clearBets(true);
+document.getElementById('rebetBtn').onclick=()=>{
+  if(spinning||!lastBets)return;
+  const totalNeeded=lastBets.reduce((s,lb)=>s+lb.amount,0);
+  if(balance<totalNeeded){openShop(true);return;}
+  clearBets(true);
+  lastBets.forEach(lb=>{
+    const reg=cellRegistry[lb.key];
+    if(!reg)return;
+    balance-=lb.amount;
+    bets[lb.key]={amount:lb.amount,def:reg.def,cellEl:reg.cellEl,label:reg.label};
+    drawPlaced(lb.key);
+  });
+  renderBal('down');updateSummary();
+};
+</script>
+<script>
+/* ===================== חנות ===================== */
+const PACKS=[
+  {chips:500,shekel:5},{chips:1000,shekel:10},
+  {chips:2500,shekel:25,best:true},{chips:5000,shekel:50},
+];
+const packsEl=document.getElementById('packs');
+PACKS.forEach(p=>{
+  const bonus=p.best?'+10% בונוס':'';
+  const give=p.best?Math.round(p.chips*1.1):p.chips;
+  const el=document.createElement('div');
+  el.className='pack'+(p.best?' best':'');
+  el.innerHTML=`<div class="amt"><span class="coin"></span> ${give.toLocaleString('he-IL')}</div>
+    <div class="bonus">${bonus}</div>
+    <div class="price">${p.shekel} ₪</div>`;
+  el.onclick=()=>buyChips(give,p.shekel);
+  packsEl.appendChild(el);
+});
+const shop=document.getElementById('shop');
+function openShop(forced){
+  document.getElementById('shopSub').textContent=
+    forced?'נגמרו הז\'יטונים! קנה עוד כדי להמשיך לשחק':'בחר חבילה והמשך ליהנות';
+  shop.classList.add('show');
+}
+document.getElementById('buyBtn').onclick=()=>openShop(false);
+document.getElementById('closeShop').onclick=()=>shop.classList.remove('show');
+shop.addEventListener('click',e=>{if(e.target===shop)shop.classList.remove('show');});
+document.getElementById('customBuy').onclick=()=>{
+  const s=parseInt(document.getElementById('customShekel').value,10);
+  if(!s||s<1){toast('הזן סכום תקין');return;}
+  buyChips(s*100,s);
+  document.getElementById('customShekel').value='';
+};
+function buyChips(chips,shekel){
+  balance+=chips; renderBal('up');
+  shop.classList.remove('show');
+  toast(`✅ נוספו ${chips.toLocaleString('he-IL')} ז'יטונים (הדמיה · ${shekel} ₪)`);
+  sound(660);
+}
+
+/* ===================== טוסט + סאונד ===================== */
+let toastT;
+function toast(msg){
+  const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');
+  clearTimeout(toastT);toastT=setTimeout(()=>el.classList.remove('show'),2600);
+}
+let actx;
+function sound(freq){
+  try{actx=actx||new(window.AudioContext||window.webkitAudioContext)();
+    const o=actx.createOscillator(),g=actx.createGain();
+    o.frequency.value=freq;o.type='triangle';o.connect(g);g.connect(actx.destination);
+    g.gain.setValueAtTime(.0001,actx.currentTime);
+    g.gain.exponentialRampToValueAtTime(.15,actx.currentTime+.02);
+    g.gain.exponentialRampToValueAtTime(.0001,actx.currentTime+.3);
+    o.start();o.stop(actx.currentTime+.3);
+  }catch(e){}
+}
+
+/* פתיחת חנות אוטומטית בטעינה אם אין מספיק */
+if(balance<DENOS[0].v) openShop(true);
+</script>
+</body>
+</html>
