@@ -74,9 +74,12 @@ function showStudentLogin() { populateGameCodes(); buildAvatarPicker(); showScre
 /* ============================================================
    🎭 בחירת דמות לשחקן (אווטאר) + העלאת תמונה אישית
    ============================================================ */
-const AVATARS = ["🐰", "🐱", "🐶", "🦊", "🐵", "🦄", "🤖", "🐯", "🐼", "🐸", "🦁", "🐧", "🐲", "🚀", "⭐"];
+const AVATARS = ["🐰", "🐱", "🐶", "🦊", "🐵", "🦄", "🤖", "🐯", "🐼", "🐸", "🦁", "🐧", "🐲", "🚀", "⭐",
+  "🐻", "🐨", "🐮", "🐷", "🐔", "🦉", "🦋", "🐙", "🐠", "🦖", "🐢", "🐝", "🦝", "👽", "🦸", "🧙", "🥷", "🐉", "🦕", "🦜", "🦈", "🐺", "🍄", "👾", "🎃"];
 let selectedAvatar = { type: "default" };
 let uploadedAvatarImg = null;
+const AVATAR_KEY = "playerAvatarPref";
+function saveAvatarPref(pref) { try { localStorage.setItem(AVATAR_KEY, JSON.stringify(pref)); } catch (e) {} }
 
 function buildAvatarPicker() {
   const c = document.getElementById("avatarPicker");
@@ -86,12 +89,42 @@ function buildAvatarPicker() {
   AVATARS.forEach(e => { html += `<button type="button" class="avatar-opt" data-type="emoji" data-val="${e}" onclick="selectAvatar(this)">${e}</button>`; });
   html += '<button type="button" class="avatar-opt avatar-upload" onclick="document.getElementById(\'avatarUpload\').click()" title="העלה תמונה">📷</button>';
   c.innerHTML = html;
+  restoreAvatarPref();
+}
+
+/* שחזור הדמות שנשמרה מהכניסה הקודמת */
+function restoreAvatarPref() {
+  let pref;
+  try { pref = JSON.parse(localStorage.getItem(AVATAR_KEY) || "null"); } catch (e) { pref = null; }
+  if (!pref) return;
+  if (pref.type === "emoji") {
+    const b = [...document.querySelectorAll("#avatarPicker .avatar-opt")].find(x => x.dataset.val === pref.value);
+    if (b) selectAvatar(b);
+  } else if (pref.type === "image" && pref.data) {
+    const img = new Image();
+    img.onload = () => {
+      uploadedAvatarImg = img; selectedAvatar = { type: "image" };
+      document.querySelectorAll("#avatarPicker .avatar-opt").forEach(b => b.classList.remove("selected"));
+      const ub = document.querySelector("#avatarPicker .avatar-upload");
+      if (ub) { ub.classList.add("selected"); ub.innerHTML = '<img class="avatar-thumb" src="' + pref.data + '" alt="">'; }
+    };
+    img.src = pref.data;
+  }
 }
 
 function selectAvatar(btn) {
   document.querySelectorAll("#avatarPicker .avatar-opt").forEach(b => b.classList.remove("selected"));
   btn.classList.add("selected");
   selectedAvatar = (btn.dataset.type === "emoji") ? { type: "emoji", value: btn.dataset.val } : { type: "default" };
+  saveAvatarPref(selectedAvatar);
+}
+
+function downscaleImage(img, max) {
+  let w = img.width, h = img.height;
+  if (w > max || h > max) { if (w > h) { h = Math.round(h * max / w); w = max; } else { w = Math.round(w * max / h); h = max; } }
+  const c = document.createElement("canvas"); c.width = w; c.height = h;
+  c.getContext("2d").drawImage(img, 0, 0, w, h);
+  return c.toDataURL("image/jpeg", 0.85);
 }
 
 function onAvatarUpload(e) {
@@ -100,16 +133,22 @@ function onAvatarUpload(e) {
   if (!/^image\//.test(f.type)) { alert("נא לבחור קובץ תמונה"); return; }
   const reader = new FileReader();
   reader.onload = () => {
-    const img = new Image();
-    img.onload = () => {
-      uploadedAvatarImg = img;
-      selectedAvatar = { type: "image" };
-      document.querySelectorAll("#avatarPicker .avatar-opt").forEach(b => b.classList.remove("selected"));
-      const ub = document.querySelector("#avatarPicker .avatar-upload");
-      if (ub) { ub.classList.add("selected"); ub.innerHTML = '<img class="avatar-thumb" src="' + img.src + '" alt="">'; }
+    const raw = new Image();
+    raw.onload = () => {
+      const smallUrl = downscaleImage(raw, 256);   // הקטנה לחיסכון מקום וביצועים
+      const img = new Image();
+      img.onload = () => {
+        uploadedAvatarImg = img;
+        selectedAvatar = { type: "image" };
+        saveAvatarPref({ type: "image", data: smallUrl });   // נשמר לכניסה הבאה
+        document.querySelectorAll("#avatarPicker .avatar-opt").forEach(b => b.classList.remove("selected"));
+        const ub = document.querySelector("#avatarPicker .avatar-upload");
+        if (ub) { ub.classList.add("selected"); ub.innerHTML = '<img class="avatar-thumb" src="' + smallUrl + '" alt="">'; }
+      };
+      img.src = smallUrl;
     };
-    img.onerror = () => alert("לא ניתן לטעון את התמונה");
-    img.src = reader.result;
+    raw.onerror = () => alert("לא ניתן לטעון את התמונה");
+    raw.src = reader.result;
   };
   reader.readAsDataURL(f);
 }
