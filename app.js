@@ -25,6 +25,8 @@ function showScreen(id) {
   if (el) el.classList.add("active");
   currentScreenId = id;
   window.scrollTo(0, 0);
+  // בורר הדמויות נבנה בכל הגעה למסך הכניסה (גם דרך "בחר משחק")
+  if (id === "studentLoginScreen" && typeof buildAvatarPicker === "function") buildAvatarPicker();
 }
 
 /* ============================================================
