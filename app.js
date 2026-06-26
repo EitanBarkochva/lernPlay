@@ -913,7 +913,12 @@ const STYLE_META = {
   spaceship: { emoji: "🚀", name: "חללית" },
   maze:      { emoji: "🧩", name: "מבוך" },
   bubbles:   { emoji: "🎯", name: "בועות" },
-  temple:    { emoji: "🏃", name: "ריצה אינסופית" }
+  temple:    { emoji: "🏃", name: "ריצה אינסופית" },
+  flappy:    { emoji: "🐤", name: "ציפור מעופפת" },
+  snake:     { emoji: "🐍", name: "נחש" },
+  frogger:   { emoji: "🐸", name: "צפרדע" },
+  hoops:     { emoji: "🏀", name: "קליעה לסל" },
+  climber:   { emoji: "🧗", name: "טיפוס קפיצות" }
 };
 const SUBJECT_META = {
   "חשבון":     { emoji: "➗", c1: "#3aa0e6", c2: "#1f6aa3" },
@@ -1712,10 +1717,10 @@ async function startGame() {
 let lastGameStyle = "mario";
 function launchGameEngine(style) {
   lastGameStyle = style;
-  const engines = { mario: MarioGame, pacman: PacmanGame, spaceship: SpaceshipGame, maze: MazeGame, bubbles: BubblesGame, temple: TempleRunGame };
+  const engines = { mario: MarioGame, pacman: PacmanGame, spaceship: SpaceshipGame, maze: MazeGame, bubbles: BubblesGame, temple: TempleRunGame, flappy: FlappyGame, snake: SnakeGame, frogger: FroggerGame, hoops: HoopsGame, climber: ClimberGame };
   activeEngine = engines[style] || MarioGame;
-  // מריו ובועות משתמשים בפקדי שמאל/ימין/פעולה; השאר (כולל ריצה אינסופית) ב-D-pad
-  const useMarioControls = (style === "mario" || style === "bubbles");
+  // משחקים עם כפתור פעולה אחד (שמאל/ימין/פעולה); השאר ב-D-pad של 4 כיוונים
+  const useMarioControls = (style === "mario" || style === "bubbles" || style === "flappy" || style === "hoops");
 
   showScreen("marioGameScreen");
   document.getElementById("gameTitleLabel").textContent = activeGame.title + " — " + activeGame.subject;
@@ -1723,14 +1728,19 @@ function launchGameEngine(style) {
   document.getElementById("pacmanControls").style.display = useMarioControls ? "none" : "flex";
   document.getElementById("marioGameScreen").classList.toggle("dpad-mode", !useMarioControls);
   const jb = document.getElementById("jumpBtn");
-  if (jb) jb.textContent = (style === "bubbles") ? "🚀 ירה" : "⬆ קפיצה";
+  if (jb) jb.textContent = (style === "bubbles") ? "🚀 ירה" : (style === "flappy") ? "🐤 עוף" : (style === "hoops") ? "🏀 קלע" : "⬆ קפיצה";
   const hints = {
     mario: "מקלדת: חיצים ימינה/שמאלה לתנועה, רווח לקפיצה. הגע לתיבת ה-❓ כדי לענות!",
     pacman: "מקלדת: חיצים לכל הכיוונים. אסוף נקודות, הגע ל-❓ כדי לענות, והיזהר מהרוחות!",
     spaceship: "מקלדת: חיצים לכל הכיוונים. אסוף כוכבים, טוס ל-❓ כדי לענות, והתחמק ממטאורים!",
     maze: "מקלדת: חיצים לכל הכיוונים. ענה על כל ה-❓ כדי לפתוח את היציאה 🏁 והגע אליה!",
     bubbles: "מקלדת: חיצים ימינה/שמאלה לכיוון התותח, רווח לירייה. פגע ב-❓ וענה נכון כדי לפוצץ בועות!",
-    temple: "מקלדת: ◀▶ להחלפת מסלול, ▲/רווח לקפיצה, ▼ להחלקה. אסוף מטבעות, הימנע ממכשולים, וענה על שערי ה-❓!"
+    temple: "מקלדת: ◀▶ להחלפת מסלול, ▲/רווח לקפיצה, ▼ להחלקה. אסוף מטבעות, הימנע ממכשולים, וענה על שערי ה-❓!",
+    flappy: "מקלדת: רווח / ▲ כדי לעוף. עברו בין הצינורות, אספו מטבעות וטוסו לשער ה-❓!",
+    snake: "מקלדת: חיצים לכל הכיוונים. אכלו מטבעות וגדלו, ואכלו את פרי ה-❓ כדי לענות!",
+    frogger: "מקלדת: חיצים להזזת הצפרדע. היזהרו ממכוניות והגיעו לעלה ה-❓ שלמעלה!",
+    hoops: "מקלדת: ◀▶ לתזוזה, רווח/▲ לזריקה. קלעו לסל שעליו ה-❓ כדי לענות!",
+    climber: "מקלדת: ◀▶ לתזוזה. קופצים אוטומטית — נחתו על משטח ה-❓ כדי לענות וטפסו גבוה!"
   };
   document.getElementById("controlsHint").textContent = hints[style] || hints.mario;
 
