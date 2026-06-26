@@ -35,7 +35,7 @@
 
   <!-- שתי דרכים להתחיל -->
   <div class="cta-row">
-    <button class="cta-card cta-student" onclick="showBrowse()">
+    <button class="cta-card cta-student" onclick="showGamePicker()">
       <span class="cta-emoji">🎮</span>
       <span class="cta-title">אני תלמיד/ה</span>
       <span class="cta-sub">בחרו משחק ושחקו — לפי כיתה ונושא</span>
@@ -60,7 +60,7 @@
   <div class="home-group">
     <h3>🎒 לתלמידים</h3>
     <div class="mini-grid">
-      <button class="mini-btn" onclick="showBrowse()"><span>📚</span>בחר משחק</button>
+      <button class="mini-btn" onclick="showGamePicker()"><span>📚</span>בחר משחק</button>
       <button class="mini-btn" onclick="showStudentLogin()"><span>🕹️</span>כניסה עם קוד</button>
       <button class="mini-btn" onclick="showBands()"><span>📘</span>אנגלית Bands</button>
       <button class="mini-btn" onclick="showPsycho()"><span>🧠</span>פסיכומטרי</button>
@@ -371,9 +371,25 @@
 </div>
 
 <!-- ============ בחירת משחק מוכן ============ -->
-<div id="browseScreen" class="screen">
+<!-- ============ אשף תלמיד: שלב 1 — בחירת סוג משחק ============ -->
+<div id="gameStyleScreen" class="screen">
   <button class="back-btn" onclick="showScreen('homeScreen')">⬅ חזרה</button>
-  <h2>📚 בחירת משחק</h2>
+  <h2>🎮 באיזה משחק תרצו לשחק?</h2>
+  <p class="muted" style="text-align:center;margin-top:-6px">בוחרים סוג משחק — אחר כך בוחרים נושא לתרגול</p>
+  <div class="style-grid">
+    <button class="style-card" style="--c1:#2ee07a;--c2:#1f9c52" onclick="chooseGameStyle('mario')"><span class="style-emoji">🍄</span><span class="style-name">סופר מריו</span><span class="style-desc">קפיצות והרפתקה</span></button>
+    <button class="style-card" style="--c1:#f6a833;--c2:#df6f1a" onclick="chooseGameStyle('pacman')"><span class="style-emoji">🟡</span><span class="style-name">פאקמן</span><span class="style-desc">אסוף נקודות</span></button>
+    <button class="style-card" style="--c1:#3aa0e6;--c2:#1f6aa3" onclick="chooseGameStyle('spaceship')"><span class="style-emoji">🚀</span><span class="style-name">חללית</span><span class="style-desc">טוס בחלל</span></button>
+    <button class="style-card" style="--c1:#a55fd0;--c2:#7d3aa0" onclick="chooseGameStyle('maze')"><span class="style-emoji">🧩</span><span class="style-name">מבוך</span><span class="style-desc">מצא את הדרך</span></button>
+    <button class="style-card" style="--c1:#f95d9c;--c2:#d62e7c" onclick="chooseGameStyle('bubbles')"><span class="style-emoji">🎯</span><span class="style-name">בועות</span><span class="style-desc">תותח ויריות</span></button>
+    <button class="style-card" style="--c1:#1ec9a6;--c2:#128a72" onclick="chooseGameStyle('temple')"><span class="style-emoji">🏃</span><span class="style-name">ריצה אינסופית</span><span class="style-desc">רוץ, קפוץ והחלק</span></button>
+  </div>
+</div>
+
+<div id="browseScreen" class="screen">
+  <button class="back-btn" onclick="backFromBrowse()">⬅ חזרה</button>
+  <h2>📚 בחירת נושא לתרגול</h2>
+  <div id="browseStyleBanner" class="style-banner"></div>
   <div class="form-card">
     <div class="row">
       <div>

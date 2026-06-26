@@ -904,8 +904,48 @@ function leaveDuel() {
    ============================================================ */
 let browseGames = [];   // המשחקים שנטענו לרשימה
 
+/* ============================================================
+   אשף תלמיד: בחירת סוג משחק (שלב 1) -> בחירת נושא (שלב 2)
+   ============================================================ */
+const STYLE_META = {
+  mario:     { emoji: "🍄", name: "סופר מריו" },
+  pacman:    { emoji: "🟡", name: "פאקמן" },
+  spaceship: { emoji: "🚀", name: "חללית" },
+  maze:      { emoji: "🧩", name: "מבוך" },
+  bubbles:   { emoji: "🎯", name: "בועות" },
+  temple:    { emoji: "🏃", name: "ריצה אינסופית" }
+};
+let wizardStyle = null;
+
+function showGamePicker() { wizardStyle = null; showScreen("gameStyleScreen"); }
+
+function chooseGameStyle(style) {
+  wizardStyle = style;
+  showBrowse();
+}
+
+function backFromBrowse() {
+  // אם הגענו דרך אשף הסגנון — חוזרים לבחירת סוג המשחק, אחרת לבית
+  if (wizardStyle) showScreen("gameStyleScreen");
+  else showScreen("homeScreen");
+}
+
+function renderStyleBanner() {
+  const b = document.getElementById("browseStyleBanner");
+  if (!b) return;
+  if (wizardStyle && STYLE_META[wizardStyle]) {
+    const m = STYLE_META[wizardStyle];
+    b.innerHTML = `<span>סוג המשחק: <b>${m.emoji} ${escapeHtml(m.name)}</b> · בחרו נושא לתרגול</span>
+      <button class="btn-small" onclick="showGamePicker()">🔄 החלף משחק</button>`;
+    b.style.display = "flex";
+  } else {
+    b.innerHTML = ""; b.style.display = "none";
+  }
+}
+
 async function showBrowse() {
   showScreen("browseScreen");
+  renderStyleBanner();
   const container = document.getElementById("browseList");
   container.innerHTML = "<p class='muted'>טוען משחקים...</p>";
   try {
@@ -1029,6 +1069,8 @@ function renderBrowse() {
 function pickGame(code, grade) {
   document.getElementById("gameCode").value = code;
   document.getElementById("studentGrade").value = grade || "";
+  // אם נבחר סוג משחק באשף — נטמיע אותו אוטומטית
+  if (wizardStyle) { const gs = document.getElementById("gameStyle"); if (gs) gs.value = wizardStyle; }
   showScreen("studentLoginScreen");
   document.getElementById("studentName").focus();
 }

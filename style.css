@@ -292,6 +292,25 @@ h3 { margin: 12px 0; color: #243746; }
 .q-timer { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
 .q-timer:empty { display: none; }
 
+/* ===== אשף בחירת סוג משחק ===== */
+.style-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px; margin: 18px 0; }
+.style-card {
+  border: none; cursor: pointer; border-radius: 20px; padding: 22px 14px; color: #fff;
+  display: flex; flex-direction: column; align-items: center; gap: 4px; font-family: inherit;
+  background: linear-gradient(150deg, var(--c1), var(--c2));
+  box-shadow: 0 8px 20px rgba(0,0,0,.16); transition: transform .12s, box-shadow .12s; animation: btnIn .4s ease both;
+}
+.style-card:hover { transform: translateY(-4px) scale(1.03); box-shadow: 0 14px 28px rgba(0,0,0,.24); }
+.style-emoji { font-size: 3rem; line-height: 1; }
+.style-name { font-family: "Secular One","Heebo",sans-serif; font-size: 1.25rem; }
+.style-desc { font-size: .85rem; opacity: .95; font-weight: 600; }
+
+.style-banner {
+  display: none; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
+  background: linear-gradient(135deg, #eafaf6, #f3fbff); border: 2px solid #b9e6dd; border-radius: 14px;
+  padding: 10px 16px; margin-bottom: 14px; font-weight: 700; color: #138a72;
+}
+
 /* ===== דף בית מחודש ===== */
 .stat-badges { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 14px; }
 .stat-badge { background: rgba(255,255,255,.82); border: 1px solid rgba(0,0,0,.06); border-radius: 999px; padding: 6px 14px; font-weight: 700; font-size: .9rem; color: #3b4a57; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
