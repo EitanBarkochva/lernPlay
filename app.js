@@ -915,18 +915,55 @@ const STYLE_META = {
   bubbles:   { emoji: "🎯", name: "בועות" },
   temple:    { emoji: "🏃", name: "ריצה אינסופית" }
 };
-let wizardStyle = null;
+const SUBJECT_META = {
+  "חשבון":     { emoji: "➗", c1: "#3aa0e6", c2: "#1f6aa3" },
+  "אנגלית":    { emoji: "🔤", c1: "#a55fd0", c2: "#7d3aa0" },
+  "עברית":     { emoji: "✍️", c1: "#e17055", c2: "#c0392b" },
+  "מדעים":     { emoji: "🔬", c1: "#1ec9a6", c2: "#128a72" },
+  "תורה":      { emoji: "📖", c1: "#f6a833", c2: "#df6f1a" },
+  "פסיכומטרי": { emoji: "🧠", c1: "#6166e0", c2: "#3f44b0" }
+};
+let wizardStyle = null, wizardSubject = null;
 
-function showGamePicker() { wizardStyle = null; showScreen("gameStyleScreen"); }
+function showGamePicker() { wizardStyle = null; wizardSubject = null; showScreen("gameStyleScreen"); }
 
-function chooseGameStyle(style) {
-  wizardStyle = style;
-  showBrowse();
+function chooseGameStyle(style) { wizardStyle = style; showSubjects(); }
+
+/* שלב 2 — קוביות מקצוע */
+async function showSubjects() {
+  showScreen("subjectScreen");
+  const sb = document.getElementById("subjectStyleBanner");
+  if (sb && wizardStyle && STYLE_META[wizardStyle]) {
+    const m = STYLE_META[wizardStyle];
+    sb.innerHTML = `<span>סוג המשחק: <b>${m.emoji} ${escapeHtml(m.name)}</b></span><button class="btn-small" onclick="showGamePicker()">🔄 החלף</button>`;
+    sb.style.display = "flex";
+  }
+  const c = document.getElementById("subjectCubes");
+  c.innerHTML = "<p class='muted'>טוען...</p>";
+  try { browseGames = await listGames(); }
+  catch (e) { console.error(e); c.innerHTML = "<p class='muted'>שגיאה בטעינה.</p>"; return; }
+
+  const subjects = [...new Set(browseGames.filter(g => !isBandGame(g)).map(g => g.subject).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b, "he"));
+  const bands = [...new Set(browseGames.filter(g => isBandGame(g)).map(g => g.topic))].sort();
+  const cube = (val, emoji, name, desc, c1, c2) =>
+    `<button class="style-card" style="--c1:${c1};--c2:${c2}" onclick="chooseSubject('${escapeAttr(val)}')">
+      <span class="style-emoji">${emoji}</span><span class="style-name">${escapeHtml(name)}</span>
+      <span class="style-desc">${escapeHtml(desc)}</span></button>`;
+  let html = "";
+  subjects.forEach(s => {
+    const m = SUBJECT_META[s] || { emoji: "📚", c1: "#5d6d7e", c2: "#34495e" };
+    const n = browseGames.filter(g => g.subject === s && !isBandGame(g)).length;
+    html += cube("subject:" + s, m.emoji, s, n + " משחקים", m.c1, m.c2);
+  });
+  bands.forEach(b => html += cube("band:" + b, "📘", b, "אוצר מילים", "#4a4fc0", "#3a3f9e"));
+  c.innerHTML = html;
 }
 
+function chooseSubject(val) { wizardSubject = val; showBrowse(); }
+
 function backFromBrowse() {
-  // אם הגענו דרך אשף הסגנון — חוזרים לבחירת סוג המשחק, אחרת לבית
-  if (wizardStyle) showScreen("gameStyleScreen");
+  if (wizardStyle) showSubjects();      // חזרה לקוביות המקצוע
   else showScreen("homeScreen");
 }
 
@@ -935,8 +972,8 @@ function renderStyleBanner() {
   if (!b) return;
   if (wizardStyle && STYLE_META[wizardStyle]) {
     const m = STYLE_META[wizardStyle];
-    b.innerHTML = `<span>סוג המשחק: <b>${m.emoji} ${escapeHtml(m.name)}</b> · בחרו נושא לתרגול</span>
-      <button class="btn-small" onclick="showGamePicker()">🔄 החלף משחק</button>`;
+    b.innerHTML = `<span>סוג המשחק: <b>${m.emoji} ${escapeHtml(m.name)}</b></span>
+      <button class="btn-small" onclick="showSubjects()">🔄 החלף מקצוע</button>`;
     b.style.display = "flex";
   } else {
     b.innerHTML = ""; b.style.display = "none";
@@ -972,6 +1009,9 @@ async function showBrowse() {
   subjects.forEach(s => subSel.add(new Option(s, "subject:" + s)));
   const bands = [...new Set(browseGames.filter(g => isBandGame(g)).map(g => g.topic))].sort();
   bands.forEach(b => subSel.add(new Option("📘 " + b, "band:" + b)));
+
+  // אם נבחר מקצוע באשף — מסננים אליו אוטומטית
+  if (wizardSubject) { subSel.value = wizardSubject; }
 
   renderBrowse();
 }
