@@ -40,7 +40,7 @@ const HoopsGame = (function () {
   function buildLevel(n) {
     activeQ = null; answered = 0;
     player = { x: canvas.width / 2, w: 56, speed: 5 };
-    hoop = { x: canvas.width / 2, y: 80, w: 70, dir: 1, spd: 1.4 + n * 0.4 };
+    hoop = { x: canvas.width / 2, y: 98, w: 70, dir: 1, spd: 1.4 + n * 0.4 };
     ball = null;
     start = (n - 1) * perLevel;
     const end = Math.min(start + perLevel, game.questions.length);
