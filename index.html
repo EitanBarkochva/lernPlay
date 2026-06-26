@@ -23,28 +23,71 @@
 <!-- ============ 1. דף בית ============ -->
 <div id="homeScreen" class="screen active">
   <div class="hero">
-    <h1>🎮 משחק לימודי לחופש הגדול 🌞</h1>
-    <p class="subtitle">לומדים, משחקים ואוספים מטבעות זהב!</p>
+    <h1>🎮 לומדים בכיף בחופש הגדול 🌞</h1>
+    <p class="subtitle">משחקים לימודיים בעברית — חשבון, אנגלית, מדעים ועוד · חינם, בלי הורדה</p>
+    <div class="stat-badges">
+      <span class="stat-badge">🎮 6 סוגי משחק</span>
+      <span class="stat-badge">📚 180+ משחקים</span>
+      <span class="stat-badge">🏫 כיתות א׳–ו׳</span>
+      <span class="stat-badge">🆓 חינם לגמרי</span>
+    </div>
   </div>
-  <div class="home-buttons">
-    <button class="big-btn green"  onclick="showScreen('createGameScreen')">➕ יצירת משחק חדש<br><small>למורה / הורה</small></button>
-    <button class="big-btn teal"   onclick="showBrowse()">📚 בחר משחק מוכן<br><small>לפי כיתה ונושא</small></button>
-    <button class="big-btn indigo" onclick="showBands()">📘 אנגלית - Bands<br><small>אוצר מילים I / II / III</small></button>
-    <button class="big-btn dark"   onclick="showExams()">📝 מבחנים<br><small>בחר בחינה + טיימר</small></button>
-    <button class="big-btn teal2"  onclick="showPrograms()">🎓 תוכניות עולה<br><small>מוכנים לשנה הבאה</small></button>
-    <button class="big-btn pink"   onclick="showRecommend()">✨ משחקים מומלצים לי<br><small>לפי הפרופיל וההתקדמות</small></button>
-    <button class="big-btn purple"  onclick="showPsycho()">🧠 פסיכומטרי לילדים<br><small>חשיבה והיגיון · כיתות א–ו</small></button>
-    <button class="big-btn blue"   onclick="showStudentLogin()">🕹️ כניסה עם קוד<br><small>לתלמיד</small></button>
-    <button class="big-btn purple" onclick="showQuizOnly()">📝 שאלות בלי משחק</button>
-    <button class="big-btn red-btn" onclick="showScreen('duelHomeScreen')">⚔️ תחרות 1 על 1<br><small>אונליין מול חבר</small></button>
-    <button class="big-btn gold-btn" onclick="showLeaderboard()">🏆 טבלת אלופים</button>
-    <button class="big-btn orange" onclick="openTeacherReports()">📊 צפייה בדוחות</button>
-    <button class="big-btn pink"   onclick="showScreen('viewQuestionsScreen')">👀 צפייה בשאלות</button>
-    <button class="big-btn dark"   onclick="showScreen('helpScreen')">❓ עזרה<br><small>איך משתמשים באפליקציה</small></button>
-    <button class="big-btn dark" onclick="showFeedbackList()">🔒 ניהול תקלות<br><small>למנהל בלבד</small></button>
+
+  <!-- שתי דרכים להתחיל -->
+  <div class="cta-row">
+    <button class="cta-card cta-student" onclick="showBrowse()">
+      <span class="cta-emoji">🎮</span>
+      <span class="cta-title">אני תלמיד/ה</span>
+      <span class="cta-sub">בחרו משחק ושחקו — לפי כיתה ונושא</span>
+      <span class="cta-go">שחקו עכשיו ◀</span>
+    </button>
+    <button class="cta-card cta-teacher" onclick="showScreen('createGameScreen')">
+      <span class="cta-emoji">👩‍🏫</span>
+      <span class="cta-title">מורה / הורה</span>
+      <span class="cta-sub">צרו משחק או מבחן וקבלו קוד לשיתוף</span>
+      <span class="cta-go">צרו משחק ◀</span>
+    </button>
   </div>
-  <p class="demo-hint">💡 טיפ: יש משחק דוגמה מוכן! קוד המשחק: <b>DEMO-A1</b></p>
-  <p class="qa-link"><a href="test-scenario.html" target="_blank" rel="noopener">🧪 דף בדיקות מערכת (QA) — נפתח בכרטיסייה נפרדת</a></p>
+
+  <!-- איך זה עובד -->
+  <div class="steps">
+    <div class="step"><span class="step-num">1</span><span>בוחרים משחק או נושא</span></div>
+    <div class="step"><span class="step-num">2</span><span>משחקים ועונים על שאלות</span></div>
+    <div class="step"><span class="step-num">3</span><span>אוספים מטבעות ומקבלים דוח</span></div>
+  </div>
+
+  <!-- אפשרויות לתלמידים -->
+  <div class="home-group">
+    <h3>🎒 לתלמידים</h3>
+    <div class="mini-grid">
+      <button class="mini-btn" onclick="showBrowse()"><span>📚</span>בחר משחק</button>
+      <button class="mini-btn" onclick="showStudentLogin()"><span>🕹️</span>כניסה עם קוד</button>
+      <button class="mini-btn" onclick="showBands()"><span>📘</span>אנגלית Bands</button>
+      <button class="mini-btn" onclick="showPsycho()"><span>🧠</span>פסיכומטרי</button>
+      <button class="mini-btn" onclick="showPrograms()"><span>🎓</span>תוכניות עולה</button>
+      <button class="mini-btn" onclick="showRecommend()"><span>✨</span>מומלצים לי</button>
+      <button class="mini-btn" onclick="showScreen('duelHomeScreen')"><span>⚔️</span>תחרות 1 על 1</button>
+      <button class="mini-btn" onclick="showQuizOnly()"><span>📝</span>שאלות בלי משחק</button>
+      <button class="mini-btn" onclick="showLeaderboard()"><span>🏆</span>טבלת אלופים</button>
+    </div>
+  </div>
+
+  <!-- אפשרויות למורים והורים -->
+  <div class="home-group">
+    <h3>👩‍🏫 למורים והורים</h3>
+    <div class="mini-grid">
+      <button class="mini-btn" onclick="showScreen('createGameScreen')"><span>➕</span>יצירת משחק</button>
+      <button class="mini-btn" onclick="showExams()"><span>📝</span>מבחנים</button>
+      <button class="mini-btn" onclick="openTeacherReports()"><span>📊</span>צפייה בדוחות</button>
+      <button class="mini-btn" onclick="showScreen('viewQuestionsScreen')"><span>👀</span>צפייה בשאלות</button>
+    </div>
+  </div>
+
+  <div class="home-foot">
+    <span class="demo-pill">💡 לניסיון מהיר — קוד משחק דוגמה: <b>DEMO-A1</b></span>
+    <button class="foot-link" onclick="showScreen('helpScreen')">❓ עזרה</button>
+    <button class="foot-link" onclick="showFeedbackList()">🔒 ניהול תקלות</button>
+  </div>
 </div>
 
 <!-- ============ 2. יצירת משחק ============ -->

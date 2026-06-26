@@ -292,6 +292,45 @@ h3 { margin: 12px 0; color: #243746; }
 .q-timer { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
 .q-timer:empty { display: none; }
 
+/* ===== דף בית מחודש ===== */
+.stat-badges { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 14px; }
+.stat-badge { background: rgba(255,255,255,.82); border: 1px solid rgba(0,0,0,.06); border-radius: 999px; padding: 6px 14px; font-weight: 700; font-size: .9rem; color: #3b4a57; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+
+.cta-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 22px 0; }
+.cta-card {
+  position: relative; overflow: hidden; border: none; cursor: pointer; text-align: right;
+  border-radius: 22px; padding: 22px 20px; color: #fff; display: flex; flex-direction: column; gap: 5px;
+  box-shadow: 0 10px 26px rgba(0,0,0,.18); transition: transform .12s, box-shadow .12s; font-family: inherit;
+  animation: btnIn .45s ease both;
+}
+.cta-card::after { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 45%; background: linear-gradient(rgba(255,255,255,.18), rgba(255,255,255,0)); pointer-events: none; }
+.cta-card:hover { transform: translateY(-3px); box-shadow: 0 16px 34px rgba(0,0,0,.24); }
+.cta-student { background: linear-gradient(150deg, #3aa0e6, #1f6aa3); }
+.cta-teacher { background: linear-gradient(150deg, #a55fd0, #7d3aa0); }
+.cta-emoji { font-size: 2.6rem; line-height: 1; }
+.cta-title { font-family: "Secular One","Heebo",sans-serif; font-size: 1.5rem; }
+.cta-sub { font-size: .95rem; opacity: .96; font-weight: 600; }
+.cta-go { margin-top: 8px; align-self: flex-start; font-weight: 800; background: rgba(255,255,255,.22); padding: 6px 14px; border-radius: 999px; font-size: .95rem; }
+
+.steps { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin: 4px 0 22px; }
+.step { display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,.78); border-radius: 14px; padding: 10px 14px; font-weight: 700; color: #3b4a57; font-size: .95rem; }
+.step-num { flex: none; width: 26px; height: 26px; border-radius: 50%; background: #27ae60; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 800; }
+
+.home-group { background: rgba(255,255,255,.72); border-radius: 20px; padding: 16px 18px; margin-bottom: 16px; box-shadow: 0 4px 16px rgba(0,0,0,.06); }
+.home-group h3 { margin: 0 0 12px; font-size: 1.15rem; color: #243746; }
+.mini-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+.mini-btn { display: flex; align-items: center; gap: 9px; background: #fff; border: 2px solid #e8edf2; border-radius: 14px; padding: 12px; font-family: inherit; font-size: 1rem; font-weight: 700; color: #2d3a44; cursor: pointer; text-align: right; transition: transform .1s, border-color .1s, box-shadow .1s; }
+.mini-btn span { font-size: 1.4rem; flex: none; }
+.mini-btn:hover { transform: translateY(-2px); border-color: #3aa0e6; box-shadow: 0 6px 14px rgba(0,0,0,.1); }
+
+.home-foot { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: center; margin-top: 4px; }
+.foot-link { background: rgba(255,255,255,.65); border: 1px solid rgba(0,0,0,.08); border-radius: 12px; padding: 8px 14px; font-family: inherit; font-weight: 700; color: #4a5a66; cursor: pointer; font-size: .9rem; }
+.foot-link:hover { background: #fff; }
+.demo-pill { background: linear-gradient(135deg, #fff6d6, #ffe9b3); border: 2px dashed #f0c040; border-radius: 12px; padding: 8px 14px; font-weight: 700; font-size: .9rem; }
+.demo-pill b { color: #c0392b; letter-spacing: 1px; }
+
+@media (max-width: 600px) { .cta-row { grid-template-columns: 1fr; } }
+
 /* בורר דמויות (אווטאר) */
 .avatar-picker { display: flex; flex-wrap: wrap; gap: 8px; margin: 6px 0 4px; }
 .avatar-opt {
