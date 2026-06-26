@@ -925,7 +925,7 @@ const SUBJECT_META = {
 };
 let wizardStyle = null, wizardSubject = null;
 
-function showGamePicker() { wizardStyle = null; wizardSubject = null; showScreen("gameStyleScreen"); }
+function showGamePicker() { wizardStyle = null; wizardSubject = null; showScreen("homeScreen"); }
 
 function chooseGameStyle(style) { wizardStyle = style; showSubjects(); }
 

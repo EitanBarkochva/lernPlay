@@ -312,6 +312,7 @@ h3 { margin: 12px 0; color: #243746; }
 }
 
 /* ===== דף בית מחודש ===== */
+.home-h { text-align: center; font-size: 1.4rem; margin: 8px 0 12px; color: #243746; }
 .stat-badges { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 14px; }
 .stat-badge { background: rgba(255,255,255,.82); border: 1px solid rgba(0,0,0,.06); border-radius: 999px; padding: 6px 14px; font-weight: 700; font-size: .9rem; color: #3b4a57; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
 
