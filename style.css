@@ -251,10 +251,11 @@ h3 { margin: 12px 0; color: #243746; }
 .touch-btn.jump { background: linear-gradient(160deg, #2ee07a, #1f9c52); width: 130px; font-size: 1.1rem; font-weight: 700; }
 .touch-btn:active { transform: translateY(4px); box-shadow: 0 1px 0 rgba(0,0,0,.28), 0 3px 8px rgba(0,0,0,.18); }
 
-/* פקד 4 כיוונים לפאקמן */
+/* פקד 4 כיוונים — בצורת צלב (▲ למעלה, ▼ למטה, ◀ שמאל, ▶ ימין) */
 .dpad {
   display: grid; grid-template-columns: repeat(3, 64px); grid-template-rows: repeat(3, 56px);
   gap: 6px; justify-content: center; margin: 14px auto 0;
+  direction: ltr;   /* כדי שבעמוד RTL החיצים לא יתהפכו: שמאל בשמאל, ימין בימין */
 }
 .dpad .touch-btn { width: 64px; height: 56px; }
 .dpad-up    { grid-column: 2; grid-row: 1; }

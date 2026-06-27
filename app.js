@@ -1725,7 +1725,7 @@ function launchGameEngine(style) {
   showScreen("marioGameScreen");
   document.getElementById("gameTitleLabel").textContent = activeGame.title + " — " + activeGame.subject;
   document.getElementById("marioControls").style.display = useMarioControls ? "flex" : "none";
-  document.getElementById("pacmanControls").style.display = useMarioControls ? "none" : "flex";
+  document.getElementById("pacmanControls").style.display = useMarioControls ? "none" : "grid";
   document.getElementById("marioGameScreen").classList.toggle("dpad-mode", !useMarioControls);
   const jb = document.getElementById("jumpBtn");
   if (jb) jb.textContent = (style === "bubbles") ? "🚀 ירה" : (style === "flappy") ? "🐤 עוף" : (style === "hoops") ? "🏀 קלע" : "⬆ קפיצה";
