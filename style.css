@@ -294,6 +294,24 @@ h3 { margin: 12px 0; color: #243746; }
 .q-timer { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
 .q-timer:empty { display: none; }
 
+/* ===== כרטיסיות אמירם (Flashcards) ===== */
+.fc-progress { text-align: center; font-weight: 700; color: #3b4a57; margin: 6px 0 12px; }
+.flashcard { perspective: 1200px; max-width: 440px; height: 220px; margin: 0 auto 18px; cursor: pointer; }
+.flashcard-inner { position: relative; width: 100%; height: 100%; transition: transform .5s cubic-bezier(.2,1,.4,1); transform-style: preserve-3d; }
+.flashcard-inner.flipped { transform: rotateY(180deg); }
+.flashcard-face {
+  position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+  border-radius: 22px; box-shadow: 0 12px 30px rgba(0,0,0,.2); color: #fff; padding: 16px; text-align: center;
+}
+.flashcard-face small { font-size: .8rem; font-weight: 600; opacity: .8; }
+.fc-front { background: linear-gradient(150deg, #3aa0e6, #1f6aa3); }
+.fc-front span:first-child { font-size: 2.6rem; font-weight: 800; direction: ltr; }
+.fc-back { background: linear-gradient(150deg, #2ee07a, #1f9c52); transform: rotateY(180deg); }
+.fc-back span:first-child { font-size: 2.3rem; font-weight: 800; }
+.fc-controls { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+.fc-controls2 { display: flex; gap: 10px; justify-content: center; margin-top: 12px; }
+
 /* ===== אשף בחירת סוג משחק ===== */
 .style-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px; margin: 18px 0; }
 .style-card {

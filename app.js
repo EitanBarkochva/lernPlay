@@ -1331,6 +1331,58 @@ async function getRecommendations() {
 }
 
 /* ============================================================
+   📇 כרטיסיות אוצר מילים אמירם (Flashcards)
+   ============================================================ */
+const AMIRAM_PER = 30;
+let fcQuiz = [], fcIndex = 0, fcFlipped = false;
+
+function showAmiram() {
+  showScreen("amiramScreen");
+  const c = document.getElementById("amiramQuizzes");
+  if (typeof AMIRAM_WORDS === "undefined" || !AMIRAM_WORDS.length) {
+    c.innerHTML = "<p class='muted'>שגיאה בטעינת המילים.</p>"; return;
+  }
+  const n = Math.ceil(AMIRAM_WORDS.length / AMIRAM_PER);
+  let html = "";
+  for (let i = 0; i < n; i++) {
+    const a = i * AMIRAM_PER + 1, b = Math.min((i + 1) * AMIRAM_PER, AMIRAM_WORDS.length);
+    html += `<button class="style-card" style="--c1:#3aa0e6;--c2:#1f6aa3" onclick="openAmiramQuiz(${i})">
+      <span class="style-emoji">📇</span><span class="style-name">חידון ${i + 1}</span>
+      <span class="style-desc">מילים ${a}–${b}</span></button>`;
+  }
+  c.innerHTML = html;
+}
+
+function openAmiramQuiz(i) {
+  fcQuiz = AMIRAM_WORDS.slice(i * AMIRAM_PER, (i + 1) * AMIRAM_PER);
+  fcIndex = 0;
+  document.getElementById("fcTitle").textContent = "📇 חידון " + (i + 1);
+  showScreen("flashcardScreen");
+  renderCard();
+}
+
+function renderCard() {
+  const card = fcQuiz[fcIndex];
+  if (!card) return;
+  document.getElementById("fcEnglish").textContent = card.e;
+  document.getElementById("fcHebrew").textContent = card.h || "(אין תרגום)";
+  document.getElementById("fcProgress").textContent = "כרטיס " + (fcIndex + 1) + " מתוך " + fcQuiz.length;
+  fcFlipped = false;
+  document.getElementById("flashcardInner").classList.remove("flipped");
+  setTimeout(() => speakEnglish(card.e), 250);   // 🔊 הקראת המילה באנגלית
+}
+
+function flipCard() {
+  fcFlipped = !fcFlipped;
+  document.getElementById("flashcardInner").classList.toggle("flipped", fcFlipped);
+  if (!fcFlipped) speakEnglish(fcCurrentWord());   // חזרה לצד האנגלי — הקראה
+}
+function fcNext() { if (fcIndex < fcQuiz.length - 1) { fcIndex++; renderCard(); } }
+function fcPrev() { if (fcIndex > 0) { fcIndex--; renderCard(); } }
+function fcShuffle() { fcQuiz = shuffle(fcQuiz); fcIndex = 0; renderCard(); }
+function fcCurrentWord() { return fcQuiz[fcIndex] ? fcQuiz[fcIndex].e : ""; }
+
+/* ============================================================
    אנגלית - Bands (אוצר מילים רשמי)
    ============================================================ */
 async function showBands() {

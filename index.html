@@ -70,6 +70,7 @@
     <div class="mini-grid">
       <button class="mini-btn" onclick="showStudentLogin()"><span>🕹️</span>כניסה עם קוד</button>
       <button class="mini-btn" onclick="showBands()"><span>📘</span>אנגלית Bands</button>
+      <button class="mini-btn" onclick="showAmiram()"><span>📇</span>כרטיסיות אמירם</button>
       <button class="mini-btn" onclick="showPsycho()"><span>🧠</span>פסיכומטרי</button>
       <button class="mini-btn" onclick="showPrograms()"><span>🎓</span>תוכניות עולה</button>
       <button class="mini-btn" onclick="showRecommend()"><span>✨</span>מומלצים לי</button>
@@ -751,6 +752,35 @@
   <div id="feedbackList" class="table-wrap"></div>
 </div>
 
+<!-- ============ כרטיסיות אוצר מילים אמירם ============ -->
+<div id="amiramScreen" class="screen">
+  <button class="back-btn" onclick="showScreen('homeScreen')">⬅ חזרה</button>
+  <h2>📇 כרטיסיות אוצר מילים — אמירם</h2>
+  <p class="muted" style="text-align:center;margin-top:-6px">בחרו חידון של 30 מילים · צד אחד אנגלית, הופכים לעברית 🔁</p>
+  <div id="amiramQuizzes" class="style-grid"></div>
+</div>
+
+<div id="flashcardScreen" class="screen">
+  <button class="back-btn" onclick="showAmiram()">⬅ חזרה לחידונים</button>
+  <h2 id="fcTitle">📇 כרטיסיות</h2>
+  <p class="fc-progress" id="fcProgress"></p>
+  <div class="flashcard" id="flashcard" onclick="flipCard()">
+    <div class="flashcard-inner" id="flashcardInner">
+      <div class="flashcard-face fc-front"><span id="fcEnglish"></span><small>לחצו להפיכה</small></div>
+      <div class="flashcard-face fc-back"><span id="fcHebrew"></span><small>לחצו להפיכה</small></div>
+    </div>
+  </div>
+  <div class="fc-controls">
+    <button class="btn blue" onclick="fcPrev()">⬅ הקודם</button>
+    <button class="btn" onclick="flipCard()">🔄 הפוך כרטיס</button>
+    <button class="btn green" onclick="fcNext()">הבא ➡</button>
+  </div>
+  <div class="fc-controls2">
+    <button class="btn-small" onclick="speakEnglish(fcCurrentWord())">🔊 השמע באנגלית</button>
+    <button class="btn-small" onclick="fcShuffle()">🔀 ערבוב</button>
+  </div>
+</div>
+
 <!-- ספריית קריאת קבצי Excel/CSV (לייבוא שאלות) -->
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
@@ -767,6 +797,7 @@
 <script src="frogger.js"></script>
 <script src="hoops.js"></script>
 <script src="climber.js"></script>
+<script src="amiram.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
