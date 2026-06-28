@@ -316,11 +316,13 @@ h3 { margin: 12px 0; color: #243746; }
 .fc-controls2 { display: flex; gap: 10px; justify-content: center; margin-top: 12px; }
 
 /* ===== חלקי המוח (נוירופדגוגיה) ===== */
-.flashcard-tall { height: 300px; max-width: 480px; }
-.brain-front { background: linear-gradient(150deg, #d56aa0, #9b3d77); gap: 6px; }
-.brain-front span:first-child { font-size: 1.9rem; font-weight: 800; direction: ltr; }
-.brain-la { font-size: 1.05rem; font-style: italic; opacity: .9; direction: ltr; }
-.brain-he { font-size: 1.5rem; font-weight: 700; margin-top: 2px; }
+.flashcard-tall { height: 340px; max-width: 480px; }
+.brain-front { background: linear-gradient(150deg, #d56aa0, #9b3d77); gap: 4px; }
+.brain-front span:first-child { font-size: 1.7rem; font-weight: 800; direction: ltr; }
+.brain-la { font-size: 1rem; font-style: italic; opacity: .9; direction: ltr; }
+.brain-he { font-size: 1.3rem; font-weight: 700; margin-top: 1px; }
+.brain-map { width: 132px; height: 110px; margin: 4px 0; filter: drop-shadow(0 2px 4px rgba(0,0,0,.25)); }
+.brain-map svg { width: 100%; height: 100%; display: block; }
 .brain-back { background: linear-gradient(150deg, #6c5ce7, #4a3fb0); }
 .brain-fn { font-size: 1.05rem; font-weight: 600; line-height: 1.6; max-width: 94%; }
 

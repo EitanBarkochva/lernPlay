@@ -1457,6 +1457,34 @@ function sqFinish() {
    🧠 חלקי המוח — כרטיסיות (נוירופדגוגיה)
    ============================================================ */
 let brList = [], brIdx = 0, brFlipped = false;
+
+// מיקום מקורב של כל חלק על ציור מוח (מבט צד, מצח משמאל) — viewBox 120x100
+const BRAIN_LOC = {
+  "Frontal lobe": [30, 36], "Parietal lobe": [62, 28], "Temporal lobe": [46, 56], "Occipital lobe": [94, 40],
+  "Cerebral cortex": [50, 22], "Cerebellum": [93, 64], "Brainstem": [84, 80], "Hippocampus": [56, 52],
+  "Amygdala": [48, 54], "Thalamus": [58, 42], "Hypothalamus": [56, 50], "Corpus callosum": [52, 40],
+  "Basal ganglia": [50, 42], "Limbic system": [55, 48], "Broca's area": [30, 46], "Wernicke's area": [70, 48],
+  "Prefrontal cortex": [22, 40], "Motor cortex": [48, 24], "Somatosensory cortex": [58, 24], "Pons": [80, 72],
+  "Medulla oblongata": [85, 86], "Midbrain": [76, 66], "Pituitary gland": [60, 58], "Reticular formation": [80, 70],
+  "Insula": [44, 46], "Cingulate cortex": [50, 32], "Substantia nigra": [74, 64], "Gray matter": [38, 26], "White matter": [50, 40]
+};
+function brainMapSVG(en) {
+  const p = BRAIN_LOC[en] || [55, 40];
+  return `<svg viewBox="0 0 120 100" xmlns="http://www.w3.org/2000/svg">
+    <g fill="#dfe6ee" stroke="#8a96a3" stroke-width="1.5" stroke-linejoin="round">
+      <path d="M16 50 Q10 28 34 20 Q46 12 62 15 Q88 13 101 30 Q108 39 100 48 Q105 55 94 55 Q98 62 87 61 Q88 67 78 65 Q66 69 54 65 Q40 69 30 64 Q18 62 16 50 Z"/>
+      <ellipse cx="93" cy="64" rx="12" ry="9"/>
+      <path d="M80 62 Q82 80 85 92 Q88 80 88 62 Z"/>
+    </g>
+    <g fill="none" stroke="#aab4c0" stroke-width="1">
+      <path d="M26 38 q9 -6 17 0"/><path d="M46 28 q10 -4 18 2"/><path d="M68 26 q10 -1 15 7"/>
+      <path d="M28 50 q13 -4 24 2"/><path d="M58 46 q12 -3 20 4"/>
+    </g>
+    <circle cx="${p[0]}" cy="${p[1]}" r="10" fill="rgba(231,76,60,0.2)"/>
+    <circle cx="${p[0]}" cy="${p[1]}" r="5" fill="#e74c3c" stroke="#fff" stroke-width="1.7"/>
+  </svg>`;
+}
+
 function startBrainFlash() { brList = shuffle(BRAIN_PARTS); brIdx = 0; showScreen("brainScreen"); brRender(); }
 function brRender() {
   const b = brList[brIdx]; if (!b) return;
@@ -1464,6 +1492,7 @@ function brRender() {
   document.getElementById("brLa").textContent = b.la;
   document.getElementById("brHe").textContent = b.he;
   document.getElementById("brFn").textContent = b.fn;
+  document.getElementById("brMap").innerHTML = brainMapSVG(b.en);
   document.getElementById("brProgress").textContent = "כרטיס " + (brIdx + 1) + " מתוך " + brList.length;
   brFlipped = false; document.getElementById("brInner").classList.remove("flipped");
 }
