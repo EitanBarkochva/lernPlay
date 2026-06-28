@@ -315,6 +315,15 @@ h3 { margin: 12px 0; color: #243746; }
 .fc-controls { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
 .fc-controls2 { display: flex; gap: 10px; justify-content: center; margin-top: 12px; }
 
+/* ===== חלקי המוח (נוירופדגוגיה) ===== */
+.flashcard-tall { height: 300px; max-width: 480px; }
+.brain-front { background: linear-gradient(150deg, #d56aa0, #9b3d77); gap: 6px; }
+.brain-front span:first-child { font-size: 1.9rem; font-weight: 800; direction: ltr; }
+.brain-la { font-size: 1.05rem; font-style: italic; opacity: .9; direction: ltr; }
+.brain-he { font-size: 1.5rem; font-weight: 700; margin-top: 2px; }
+.brain-back { background: linear-gradient(150deg, #6c5ce7, #4a3fb0); }
+.brain-fn { font-size: 1.05rem; font-weight: 600; line-height: 1.6; max-width: 94%; }
+
 /* ===== תמרורים ===== */
 .fc-front.sign-face { background: #eef2f7 !important; color: #2d3a44; }
 .fc-front.sign-face small { color: #5a6672; }

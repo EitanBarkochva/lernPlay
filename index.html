@@ -57,6 +57,7 @@
     <button class="style-card" style="--c1:#4a4fc0;--c2:#3a3f9e" onclick="showBands()"><span class="style-emoji">📘</span><span class="style-name">אנגלית Bands</span><span class="style-desc">אוצר מילים I/II/III</span></button>
     <button class="style-card" style="--c1:#6166e0;--c2:#3f44b0" onclick="showPsycho()"><span class="style-emoji">🧠</span><span class="style-name">פסיכומטרי</span><span class="style-desc">חשיבה והיגיון</span></button>
     <button class="style-card" style="--c1:#e17055;--c2:#c0392b" onclick="showSigns()"><span class="style-emoji">🚦</span><span class="style-name">תמרורים</span><span class="style-desc">תאוריה · כרטיסיות ומשחק</span></button>
+    <button class="style-card" style="--c1:#d56aa0;--c2:#9b3d77" onclick="startBrainFlash()"><span class="style-emoji">🧠</span><span class="style-name">חלקי המוח</span><span class="style-desc">נוירופדגוגיה · כרטיסיות</span></button>
   </div>
 
   <button class="cta-card cta-teacher" style="width:100%;box-sizing:border-box;margin:6px 0" onclick="showScreen('createGameScreen')">
@@ -828,6 +829,33 @@
   <div class="feedback" id="sqFeedback"></div>
 </div>
 
+<!-- ============ חלקי המוח — כרטיסיות (נוירופדגוגיה) ============ -->
+<div id="brainScreen" class="screen">
+  <button class="back-btn" onclick="showScreen('homeScreen')">⬅ חזרה</button>
+  <h2>🧠 חלקי המוח ותפקידיו</h2>
+  <p class="fc-progress" id="brProgress"></p>
+  <div class="flashcard flashcard-tall" onclick="brFlip()">
+    <div class="flashcard-inner" id="brInner">
+      <div class="flashcard-face fc-front brain-front">
+        <span id="brEn"></span><span class="brain-la" id="brLa"></span><span class="brain-he" id="brHe"></span>
+        <small>לחצו לתפקיד</small>
+      </div>
+      <div class="flashcard-face fc-back brain-back">
+        <div class="brain-fn" id="brFn"></div><small>לחצו להפיכה</small>
+      </div>
+    </div>
+  </div>
+  <div class="fc-controls">
+    <button class="btn blue" onclick="brPrev()">⬅ הקודם</button>
+    <button class="btn" onclick="brFlip()">🔄 הפוך</button>
+    <button class="btn green" onclick="brNext()">הבא ➡</button>
+  </div>
+  <div class="fc-controls2">
+    <button class="btn-small" onclick="speakEnglish(brCurrent())">🔊 הקראה</button>
+    <button class="btn-small" onclick="brShuffle()">🔀 ערבוב</button>
+  </div>
+</div>
+
 <!-- ספריית קריאת קבצי Excel/CSV (לייבוא שאלות) -->
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
@@ -846,6 +874,7 @@
 <script src="climber.js"></script>
 <script src="amiram.js"></script>
 <script src="signs.js"></script>
+<script src="brain.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

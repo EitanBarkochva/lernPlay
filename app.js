@@ -1454,6 +1454,26 @@ function sqFinish() {
 }
 
 /* ============================================================
+   🧠 חלקי המוח — כרטיסיות (נוירופדגוגיה)
+   ============================================================ */
+let brList = [], brIdx = 0, brFlipped = false;
+function startBrainFlash() { brList = shuffle(BRAIN_PARTS); brIdx = 0; showScreen("brainScreen"); brRender(); }
+function brRender() {
+  const b = brList[brIdx]; if (!b) return;
+  document.getElementById("brEn").textContent = b.en;
+  document.getElementById("brLa").textContent = b.la;
+  document.getElementById("brHe").textContent = b.he;
+  document.getElementById("brFn").textContent = b.fn;
+  document.getElementById("brProgress").textContent = "כרטיס " + (brIdx + 1) + " מתוך " + brList.length;
+  brFlipped = false; document.getElementById("brInner").classList.remove("flipped");
+}
+function brFlip() { brFlipped = !brFlipped; document.getElementById("brInner").classList.toggle("flipped", brFlipped); }
+function brNext() { if (brIdx < brList.length - 1) { brIdx++; brRender(); } }
+function brPrev() { if (brIdx > 0) { brIdx--; brRender(); } }
+function brShuffle() { brList = shuffle(brList); brIdx = 0; brRender(); }
+function brCurrent() { return brList[brIdx] ? brList[brIdx].en : ""; }
+
+/* ============================================================
    אנגלית - Bands (אוצר מילים רשמי)
    ============================================================ */
 async function showBands() {
