@@ -50,7 +50,15 @@
   </div>
   <p class="muted" style="text-align:center;margin:-4px 0 16px">בחרו משחק → מקצוע → נושא, ויוצאים לדרך! 🚀</p>
 
-  <button class="cta-card cta-teacher" style="width:100%;box-sizing:border-box;margin-bottom:6px" onclick="showScreen('createGameScreen')">
+  <!-- תרגול אוצר מילים — קוביות -->
+  <h2 class="home-h">📚 תרגול אוצר מילים</h2>
+  <div class="style-grid">
+    <button class="style-card" style="--c1:#3aa0e6;--c2:#1f6aa3" onclick="showAmiram()"><span class="style-emoji">📇</span><span class="style-name">כרטיסיות אמירם</span><span class="style-desc">500 מילים · 17 חידונים</span></button>
+    <button class="style-card" style="--c1:#4a4fc0;--c2:#3a3f9e" onclick="showBands()"><span class="style-emoji">📘</span><span class="style-name">אנגלית Bands</span><span class="style-desc">אוצר מילים I/II/III</span></button>
+    <button class="style-card" style="--c1:#6166e0;--c2:#3f44b0" onclick="showPsycho()"><span class="style-emoji">🧠</span><span class="style-name">פסיכומטרי</span><span class="style-desc">חשיבה והיגיון</span></button>
+  </div>
+
+  <button class="cta-card cta-teacher" style="width:100%;box-sizing:border-box;margin:6px 0" onclick="showScreen('createGameScreen')">
     <span class="cta-emoji">👩‍🏫</span>
     <span class="cta-title">מורה / הורה</span>
     <span class="cta-sub">צרו משחק או מבחן וקבלו קוד לשיתוף</span>
@@ -69,9 +77,6 @@
     <h3>🎒 לתלמידים</h3>
     <div class="mini-grid">
       <button class="mini-btn" onclick="showStudentLogin()"><span>🕹️</span>כניסה עם קוד</button>
-      <button class="mini-btn" onclick="showBands()"><span>📘</span>אנגלית Bands</button>
-      <button class="mini-btn" onclick="showAmiram()"><span>📇</span>כרטיסיות אמירם</button>
-      <button class="mini-btn" onclick="showPsycho()"><span>🧠</span>פסיכומטרי</button>
       <button class="mini-btn" onclick="showPrograms()"><span>🎓</span>תוכניות עולה</button>
       <button class="mini-btn" onclick="showRecommend()"><span>✨</span>מומלצים לי</button>
       <button class="mini-btn" onclick="showScreen('duelHomeScreen')"><span>⚔️</span>תחרות 1 על 1</button>
