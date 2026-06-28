@@ -1459,29 +1459,40 @@ function sqFinish() {
 let brList = [], brIdx = 0, brFlipped = false;
 
 // מיקום מקורב של כל חלק על ציור מוח (מבט צד, מצח משמאל) — viewBox 120x100
-const BRAIN_LOC = {
-  "Frontal lobe": [30, 36], "Parietal lobe": [62, 28], "Temporal lobe": [46, 56], "Occipital lobe": [94, 40],
-  "Cerebral cortex": [50, 22], "Cerebellum": [93, 64], "Brainstem": [84, 80], "Hippocampus": [56, 52],
-  "Amygdala": [48, 54], "Thalamus": [58, 42], "Hypothalamus": [56, 50], "Corpus callosum": [52, 40],
-  "Basal ganglia": [50, 42], "Limbic system": [55, 48], "Broca's area": [30, 46], "Wernicke's area": [70, 48],
-  "Prefrontal cortex": [22, 40], "Motor cortex": [48, 24], "Somatosensory cortex": [58, 24], "Pons": [80, 72],
-  "Medulla oblongata": [85, 86], "Midbrain": [76, 66], "Pituitary gland": [60, 58], "Reticular formation": [80, 70],
-  "Insula": [44, 46], "Cingulate cortex": [50, 32], "Substantia nigra": [74, 64], "Gray matter": [38, 26], "White matter": [50, 40]
+// אזור מודגש לכל חלק (חתוך לצורת המוח). el=אליפסה, bnd=רצועה מעוקלת.
+const brEl = (cx, cy, rx, ry) => `<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}"/>`;
+const brBnd = (d) => `<path d="${d}" fill="none" stroke="#ff5630" stroke-width="5" stroke-linecap="round"/>`;
+const BRAIN_REGION = {
+  "Frontal lobe": brEl(30, 38, 15, 17), "Parietal lobe": brEl(60, 30, 17, 13),
+  "Temporal lobe": brEl(46, 56, 17, 9), "Occipital lobe": brEl(92, 42, 13, 15),
+  "Cerebral cortex": brEl(55, 38, 48, 30), "Cerebellum": brEl(93, 64, 13, 10),
+  "Brainstem": brEl(84, 80, 7, 14), "Hippocampus": brEl(56, 52, 8, 5),
+  "Amygdala": brEl(48, 54, 5, 4), "Thalamus": brEl(58, 42, 8, 6),
+  "Hypothalamus": brEl(56, 50, 6, 4), "Corpus callosum": brBnd("M40 46 Q56 32 74 44"),
+  "Basal ganglia": brEl(50, 42, 7, 6), "Limbic system": brEl(55, 46, 14, 9),
+  "Broca's area": brEl(30, 46, 6, 5), "Wernicke's area": brEl(70, 48, 6, 5),
+  "Prefrontal cortex": brEl(22, 40, 10, 13), "Motor cortex": brEl(48, 28, 5, 13),
+  "Somatosensory cortex": brEl(58, 28, 5, 13), "Pons": brEl(80, 72, 6, 5),
+  "Medulla oblongata": brEl(85, 86, 5, 6), "Midbrain": brEl(76, 66, 5, 4),
+  "Pituitary gland": brEl(60, 58, 4, 4), "Reticular formation": brEl(80, 73, 4, 10),
+  "Insula": brEl(44, 46, 6, 5), "Cingulate cortex": brBnd("M40 38 Q56 26 72 36"),
+  "Substantia nigra": brEl(74, 64, 5, 3), "Gray matter": brEl(55, 38, 48, 30),
+  "White matter": brEl(52, 42, 24, 13)
 };
 function brainMapSVG(en) {
-  const p = BRAIN_LOC[en] || [55, 40];
-  return `<svg viewBox="0 0 120 100" xmlns="http://www.w3.org/2000/svg">
-    <g fill="#dfe6ee" stroke="#8a96a3" stroke-width="1.5" stroke-linejoin="round">
-      <path d="M16 50 Q10 28 34 20 Q46 12 62 15 Q88 13 101 30 Q108 39 100 48 Q105 55 94 55 Q98 62 87 61 Q88 67 78 65 Q66 69 54 65 Q40 69 30 64 Q18 62 16 50 Z"/>
+  const reg = BRAIN_REGION[en] || brEl(55, 40, 6, 5);
+  const shapes = `<path d="M16 50 Q10 28 34 20 Q46 12 62 15 Q88 13 101 30 Q108 39 100 48 Q105 55 94 55 Q98 62 87 61 Q88 67 78 65 Q66 69 54 65 Q40 69 30 64 Q18 62 16 50 Z"/>
       <ellipse cx="93" cy="64" rx="12" ry="9"/>
-      <path d="M80 62 Q82 80 85 92 Q88 80 88 62 Z"/>
-    </g>
-    <g fill="none" stroke="#aab4c0" stroke-width="1">
+      <path d="M80 62 Q82 80 85 92 Q88 80 88 62 Z"/>`;
+  return `<svg viewBox="0 0 120 100" xmlns="http://www.w3.org/2000/svg">
+    <defs><clipPath id="brclip">${shapes}</clipPath></defs>
+    <g fill="#dfe6ee" stroke="#8a96a3" stroke-width="1.5" stroke-linejoin="round">${shapes}</g>
+    <g clip-path="url(#brclip)" fill="#ff5630" fill-opacity="0.85" stroke="#b5341c" stroke-width="0.8">${reg}</g>
+    <g fill="none" stroke="#9aa6b2" stroke-width="0.9" clip-path="url(#brclip)" opacity="0.7">
       <path d="M26 38 q9 -6 17 0"/><path d="M46 28 q10 -4 18 2"/><path d="M68 26 q10 -1 15 7"/>
       <path d="M28 50 q13 -4 24 2"/><path d="M58 46 q12 -3 20 4"/>
     </g>
-    <circle cx="${p[0]}" cy="${p[1]}" r="10" fill="rgba(231,76,60,0.2)"/>
-    <circle cx="${p[0]}" cy="${p[1]}" r="5" fill="#e74c3c" stroke="#fff" stroke-width="1.7"/>
+    <g fill="none" stroke="#8a96a3" stroke-width="1.5" stroke-linejoin="round">${shapes}</g>
   </svg>`;
 }
 
