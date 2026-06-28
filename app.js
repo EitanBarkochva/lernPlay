@@ -1387,6 +1387,73 @@ function fcShuffle() { fcQuiz = shuffle(fcQuiz); fcIndex = 0; renderCard(); }
 function fcCurrentWord() { return fcQuiz[fcIndex] ? fcQuiz[fcIndex].e : ""; }
 
 /* ============================================================
+   🚦 תמרורים — כרטיסיות ומשחק חידון (לימוד תאוריה)
+   ============================================================ */
+function showSigns() { showScreen("signsScreen"); }
+
+/* ----- כרטיסיות תמרורים ----- */
+let signFlash = [], sfIdx = 0, sfFlipped = false;
+function startSignFlash() { signFlash = shuffle(ROAD_SIGNS); sfIdx = 0; showScreen("signFlashScreen"); sfRender(); }
+function sfRender() {
+  const s = signFlash[sfIdx]; if (!s) return;
+  document.getElementById("sfSign").innerHTML = s.svg;
+  document.getElementById("sfMeaning").textContent = s.name;
+  document.getElementById("sfCat").textContent = "קטגוריה: " + s.cat;
+  document.getElementById("sfProgress").textContent = "תמרור " + (sfIdx + 1) + " מתוך " + signFlash.length;
+  sfFlipped = false; document.getElementById("sfInner").classList.remove("flipped");
+}
+function sfFlip() { sfFlipped = !sfFlipped; document.getElementById("sfInner").classList.toggle("flipped", sfFlipped); }
+function sfNext() { if (sfIdx < signFlash.length - 1) { sfIdx++; sfRender(); } }
+function sfPrev() { if (sfIdx > 0) { sfIdx--; sfRender(); } }
+function sfShuffle() { signFlash = shuffle(signFlash); sfIdx = 0; sfRender(); }
+
+/* ----- משחק חידון תמרורים ----- */
+let sq = [], sqIdx = 0, sqCorrect = 0, sqAnswered = false;
+function startSignQuiz() {
+  sq = shuffle(ROAD_SIGNS).slice(0, Math.min(15, ROAD_SIGNS.length));
+  sqIdx = 0; sqCorrect = 0;
+  showScreen("signQuizScreen"); sqRender();
+}
+function sqRender() {
+  if (sqIdx >= sq.length) { sqFinish(); return; }
+  sqAnswered = false;
+  const s = sq[sqIdx];
+  document.getElementById("sqQ").style.display = "";
+  document.getElementById("sqSign").innerHTML = s.svg;
+  document.getElementById("sqProgress").textContent = "שאלה " + (sqIdx + 1) + " מתוך " + sq.length + " · נכונות: " + sqCorrect;
+  const fb = document.getElementById("sqFeedback"); fb.textContent = ""; fb.className = "feedback";
+  const opts = shuffle([s.name, ...shuffle(ROAD_SIGNS.filter(x => x.name !== s.name)).slice(0, 3).map(x => x.name)]);
+  document.getElementById("sqOptions").innerHTML = opts.map(o =>
+    `<button class="btn answer-option sign-opt" data-v="${escapeAttr(o)}" onclick="sqAnswer('${escapeAttr(o)}')">${escapeHtml(o)}</button>`).join("");
+}
+function sqAnswer(v) {
+  if (sqAnswered) return; sqAnswered = true;
+  const s = sq[sqIdx], correct = (v === s.name);
+  document.querySelectorAll("#sqOptions .sign-opt").forEach(b => {
+    b.disabled = true;
+    if (b.getAttribute("data-v") === v) b.classList.add(correct ? "opt-correct" : "opt-wrong");
+    if (b.getAttribute("data-v") === s.name) b.classList.add("opt-correct");
+  });
+  const fb = document.getElementById("sqFeedback");
+  if (correct) { sqCorrect++; fb.className = "feedback correct"; fb.textContent = "✅ נכון!"; if (typeof playCorrect === "function") playCorrect(); }
+  else { fb.className = "feedback wrong"; fb.textContent = "❌ טעות — " + s.name; if (typeof playWrong === "function") playWrong(); }
+  setTimeout(() => { sqIdx++; sqRender(); }, correct ? 900 : 1700);
+}
+function sqFinish() {
+  const pct = Math.round(sqCorrect / sq.length * 100);
+  document.getElementById("sqSign").innerHTML = "";
+  document.getElementById("sqQ").style.display = "none";
+  document.getElementById("sqProgress").textContent = "";
+  document.getElementById("sqOptions").innerHTML = "";
+  const fb = document.getElementById("sqFeedback");
+  fb.className = "feedback " + (pct >= 60 ? "correct" : "wrong");
+  fb.innerHTML = "סיימת! ציון: <b>" + pct + "%</b> (" + sqCorrect + "/" + sq.length + ")<br><br>" +
+    '<button class="btn green" onclick="startSignQuiz()">🔁 עוד סבב</button> ' +
+    '<button class="btn blue" onclick="showScreen(\'signsScreen\')">חזרה</button>';
+  if (pct >= 60) { if (typeof launchConfetti === "function") launchConfetti(2000); if (typeof playVictory === "function") playVictory(); }
+}
+
+/* ============================================================
    אנגלית - Bands (אוצר מילים רשמי)
    ============================================================ */
 async function showBands() {

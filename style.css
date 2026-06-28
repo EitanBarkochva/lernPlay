@@ -315,6 +315,14 @@ h3 { margin: 12px 0; color: #243746; }
 .fc-controls { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
 .fc-controls2 { display: flex; gap: 10px; justify-content: center; margin-top: 12px; }
 
+/* ===== תמרורים ===== */
+.fc-front.sign-face { background: #eef2f7 !important; color: #2d3a44; }
+.fc-front.sign-face small { color: #5a6672; }
+.sign-svg { width: 150px; height: 150px; }
+.sign-svg svg { width: 100%; height: 100%; }
+.sign-quiz-img { width: 160px; height: 160px; margin: 8px auto 12px; }
+.sign-quiz-img svg { width: 100%; height: 100%; }
+
 /* ===== אשף בחירת סוג משחק ===== */
 .style-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px; margin: 18px 0; }
 .style-card {

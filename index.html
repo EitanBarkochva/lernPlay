@@ -50,12 +50,13 @@
   </div>
   <p class="muted" style="text-align:center;margin:-4px 0 16px">בחרו משחק → מקצוע → נושא, ויוצאים לדרך! 🚀</p>
 
-  <!-- תרגול אוצר מילים — קוביות -->
-  <h2 class="home-h">📚 תרגול אוצר מילים</h2>
+  <!-- לימוד ותרגול — קוביות -->
+  <h2 class="home-h">📚 לימוד ותרגול</h2>
   <div class="style-grid">
     <button class="style-card" style="--c1:#3aa0e6;--c2:#1f6aa3" onclick="showAmiram()"><span class="style-emoji">📇</span><span class="style-name">כרטיסיות אמירם</span><span class="style-desc">500 מילים · 17 חידונים</span></button>
     <button class="style-card" style="--c1:#4a4fc0;--c2:#3a3f9e" onclick="showBands()"><span class="style-emoji">📘</span><span class="style-name">אנגלית Bands</span><span class="style-desc">אוצר מילים I/II/III</span></button>
     <button class="style-card" style="--c1:#6166e0;--c2:#3f44b0" onclick="showPsycho()"><span class="style-emoji">🧠</span><span class="style-name">פסיכומטרי</span><span class="style-desc">חשיבה והיגיון</span></button>
+    <button class="style-card" style="--c1:#e17055;--c2:#c0392b" onclick="showSigns()"><span class="style-emoji">🚦</span><span class="style-name">תמרורים</span><span class="style-desc">תאוריה · כרטיסיות ומשחק</span></button>
   </div>
 
   <button class="cta-card cta-teacher" style="width:100%;box-sizing:border-box;margin:6px 0" onclick="showScreen('createGameScreen')">
@@ -786,6 +787,47 @@
   </div>
 </div>
 
+<!-- ============ תמרורים — תפריט ============ -->
+<div id="signsScreen" class="screen">
+  <button class="back-btn" onclick="showScreen('homeScreen')">⬅ חזרה</button>
+  <h2>🚦 תמרורי תנועה — לימוד תאוריה</h2>
+  <p class="muted" style="text-align:center;margin-top:-6px">להכנה למבחן התאוריה לפני מבחן הנהיגה · בחרו אופן לימוד</p>
+  <div class="style-grid">
+    <button class="style-card" style="--c1:#3aa0e6;--c2:#1f6aa3" onclick="startSignFlash()"><span class="style-emoji">📇</span><span class="style-name">כרטיסיות</span><span class="style-desc">תמרור → משמעות</span></button>
+    <button class="style-card" style="--c1:#2ee07a;--c2:#1f9c52" onclick="startSignQuiz()"><span class="style-emoji">🎮</span><span class="style-name">משחק חידון</span><span class="style-desc">בחרו את המשמעות הנכונה</span></button>
+  </div>
+</div>
+
+<!-- ============ תמרורים — כרטיסיות ============ -->
+<div id="signFlashScreen" class="screen">
+  <button class="back-btn" onclick="showScreen('signsScreen')">⬅ חזרה</button>
+  <h2>🚦 כרטיסיות תמרורים</h2>
+  <p class="fc-progress" id="sfProgress"></p>
+  <div class="flashcard" onclick="sfFlip()">
+    <div class="flashcard-inner" id="sfInner">
+      <div class="flashcard-face fc-front sign-face"><div class="sign-svg" id="sfSign"></div><small>לחצו למשמעות</small></div>
+      <div class="flashcard-face fc-back"><span id="sfMeaning"></span><div class="fc-assoc" id="sfCat"></div><small>לחצו להפיכה</small></div>
+    </div>
+  </div>
+  <div class="fc-controls">
+    <button class="btn blue" onclick="sfPrev()">⬅ הקודם</button>
+    <button class="btn" onclick="sfFlip()">🔄 הפוך</button>
+    <button class="btn green" onclick="sfNext()">הבא ➡</button>
+  </div>
+  <div class="fc-controls2"><button class="btn-small" onclick="sfShuffle()">🔀 ערבוב</button></div>
+</div>
+
+<!-- ============ תמרורים — חידון/משחק ============ -->
+<div id="signQuizScreen" class="screen">
+  <button class="back-btn" onclick="showScreen('signsScreen')">⬅ חזרה</button>
+  <h2>🚦 חידון תמרורים</h2>
+  <p class="fc-progress" id="sqProgress"></p>
+  <div class="sign-quiz-img" id="sqSign"></div>
+  <h3 id="sqQ" style="text-align:center">מה משמעות התמרור?</h3>
+  <div class="answer-area" id="sqOptions"></div>
+  <div class="feedback" id="sqFeedback"></div>
+</div>
+
 <!-- ספריית קריאת קבצי Excel/CSV (לייבוא שאלות) -->
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
@@ -803,6 +845,7 @@
 <script src="hoops.js"></script>
 <script src="climber.js"></script>
 <script src="amiram.js"></script>
+<script src="signs.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
