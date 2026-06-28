@@ -1366,6 +1366,10 @@ function renderCard() {
   if (!card) return;
   document.getElementById("fcEnglish").textContent = card.e;
   document.getElementById("fcHebrew").textContent = card.h || "(אין תרגום)";
+  const assoc = document.getElementById("fcAssoc");
+  if (assoc) assoc.innerHTML = (card.a && card.a.length)
+    ? '<div class="fc-assoc-title">💡 אסוציאציה לזכירה:</div>' + card.a.map(s => "<div>• " + escapeHtml(s) + "</div>").join("")
+    : "";
   document.getElementById("fcProgress").textContent = "כרטיס " + (fcIndex + 1) + " מתוך " + fcQuiz.length;
   fcFlipped = false;
   document.getElementById("flashcardInner").classList.remove("flipped");
